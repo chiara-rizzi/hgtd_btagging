@@ -45,9 +45,8 @@ def make_leg(n, labels, x1=0.7, y1=0.6, x2=0.876, y2=0.87, hdata=None, textSize=
 
     return leg
 
-if __name__ == "__main__":
-    print "Ciao Chiara"
 
+def make_plot(tagger, value_tagger):
     CutBase=" jet_pt>20e3 && jet_truthMatch==1 && jet_isPU==0 && abs(PVz-truth_PVz)<0.1";
     
     CutFlav=dict()
@@ -72,7 +71,7 @@ if __name__ == "__main__":
         for b in setups:
             n_thisbkg=[]
             i=0
-            for s in ["1","jet_ip3d_llr>2.007"]:
+            for s in ["1",tagger+">"+value_tagger]:
                 print s
                 htmp_name = name_can+"_"+str(i)+"_"+b+flav
                 htmp=ROOT.TH1D(htmp_name, htmp_name, var[1], var[2], var[3])
@@ -161,4 +160,9 @@ if __name__ == "__main__":
             else:
                 hratio[i].Draw("same")
 
-        c.SaveAs(name_can+"_"+flav+".pdf")
+        c.SaveAs(name_can+"_"+tagger+"_"+flav+".pdf")
+
+
+if __name__ == "__main__":
+    print "Ciao Chiara"
+    make_plot("jet_ip3d_llr","2.007")
