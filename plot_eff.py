@@ -15,7 +15,6 @@ ROOT.gStyle.SetOptTitle(0)
 def make_leg(n, labels, x1=0.7, y1=0.6, x2=0.876, y2=0.87, hdata=None, textSize=0):
     if len(n)<4:
         y1 = y1 + (y2-y1)*(4.0-len(n))/4.0
-    print "y1",y1
     leg=ROOT.TLegend(x1,y1,x2,y2)
     leg.SetFillStyle(0)
     leg.SetLineColor(0)
@@ -27,7 +26,6 @@ def make_leg(n, labels, x1=0.7, y1=0.6, x2=0.876, y2=0.87, hdata=None, textSize=
     if not hdata is None:
         leg.AddEntry(hdata, "Data")
     for h in reversed(n):
-        print "hey"
         i-=1
         if "hh" in labels[i]:
             continue
@@ -57,12 +55,14 @@ if __name__ == "__main__":
     CutFlav["C"]=" && jet_LabDr_HadF==4 "
     CutFlav["L"]=" && (jet_LabDr_HadF!=4 && jet_LabDr_HadF!=5 && jet_LabDr_HadF!=15) && jet_dRminToB>0.8 && jet_dRminToC>0.8 && jet_dRminToT>0.8"
 
-    t = ROOT.TChain("bTag_AntiKt4EMTopoJets")
-    t.Add("/eos/user/c/crizzi/HGTD/btagging/output/ITK/user.crizzi.mc15_14TeV.117050.PowhegPythia_P2011C_ttbar.recon.AOD.e2176_s3348_s3347_r10900_r11003.btag_ITKonly_v0_Akt4EMTo/user.crizzi.16988484.Akt4EMTo._0014*")
     var = ("fabs(jet_eta)",10,0.,4)
     name_can="eff_btag"
     title_x_axis = "|#eta|"
     setups = ["ITK"]
+
+    t = dict()
+    t["ITK"] = ROOT.TChain("bTag_AntiKt4EMTopoJets")
+    t["ITK"].Add("/eos/user/c/crizzi/HGTD/btagging/output/ITK/user.crizzi.mc15_14TeV.117050.PowhegPythia_P2011C_ttbar.recon.AOD.e2176_s3348_s3347_r10900_r11003.btag_ITKonly_v0_Akt4EMTo/user.crizzi.16988484.Akt4EMTo._0014*")    
 
     flavours = ["B","C","L"]
     colors = [410, 856, 607, 801, 629, 879, 602, 921, 622]
@@ -81,7 +81,7 @@ if __name__ == "__main__":
                 sel_slice=sel+" && ("+s+")"
                 string_draw = var[0]+">>"+name_can+"_"+str(i)+"_"+b+flav
                 print string_draw, sel_slice
-                t.Draw(string_draw,sel_slice,"goff")
+                t[b].Draw(string_draw,sel_slice,"goff")
                 print htmp.Integral()
                 n_thisbkg.append(htmp.Clone())
                 i+=1
