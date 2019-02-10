@@ -13,6 +13,9 @@ ROOT.gStyle.SetOptStat(0)
 ROOT.gStyle.SetOptTitle(0)
 
 def make_leg(n, labels, x1=0.7, y1=0.6, x2=0.876, y2=0.87, hdata=None, textSize=0):
+    if len(n)<4:
+        y1 = y1 + (y2-y1)*(4.0-len(n))/4.0
+    print "y1",y1
     leg=ROOT.TLegend(x1,y1,x2,y2)
     leg.SetFillStyle(0)
     leg.SetLineColor(0)
