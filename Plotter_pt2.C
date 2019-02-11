@@ -331,7 +331,7 @@ void GetComparison(string file1, string cutBase, string effCut,
   if(varName=="jet_pt/1e3") mainH->SetMaximum(0.02);
   else mainH->SetMaximum(0.015);
   mainH->SetMinimum(0.0);
-  hpxpy->GetXaxis()->SetRange(-0.1,4.0);
+  //hpxpy->GetXaxis()->SetRange(-0.1,4.0);
 
   mainH->Draw("HIST");
   mainH->SetDirectory(0);
@@ -366,7 +366,7 @@ void GetComparison(string file1, string cutBase, string effCut,
 
   cout << "TOTAL number of events is: " << myT_1->GetEntries() << endl;
 
-  string file2="/eos/atlas/user/g/guindon/user.guindon.user.guindon.HGTD_60ps.root";
+  string file2="input/HGTD/file.root";
   //string file2="/eos/user/g/guindon/user.guindon.HGTD_trk.root";
   myT_2=new TChain("bTag_AntiKt4EMTopoJets");
   cout << " OPENING FILE: " << file2 << endl;
@@ -396,7 +396,7 @@ void GetComparison(string file1, string cutBase, string effCut,
 
   cout << "TOTAL number of events 2 is : " << myT_2->GetEntries() << endl;
 
-  string file3="/eos/atlas/user/g/guindon/user.guindon.user.guindon.HGTD_30ps.root";
+  string file3="input/HGTD/file.root";
   //string file3="/eos/user/g/guindon/user.guindon.user.guindon.HGTD_eta20_fixedJetFitter.root";
   myT_3=new TChain("bTag_AntiKt4EMTopoJets");
   cout << " OPENING FILE: " << file3 << endl;
@@ -404,7 +404,7 @@ void GetComparison(string file1, string cutBase, string effCut,
  
 
   cout << "TOTAL number of events 3 is : " << myT_3->GetEntries() << endl;
-  string file3="/eos/atlas/user/g/guindon/user.guindon.user.guindon.HGTD_30ps.root";
+  string file4="input/HGTD/file.root";
   //string file4="/eos/user/g/guindon/user.guindon.user.guindon.HGTD_fixedJetFitter.root";
   myT_4=new TChain("bTag_AntiKt4EMTopoJets");
   cout << " OPENING FILE: " << file4 << endl;

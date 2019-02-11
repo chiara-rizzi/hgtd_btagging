@@ -603,7 +603,7 @@ void GetComparison(string file1, string cutBase, string effCut,
   //legend4->AddEntry(gra3 ,"ITk+HGTD (2.0 < |#eta| < 4.0)","l");
   //legend4->AddEntry(gra4 ,"ITk+HGTD (2.4 < |#eta| < 4.0)","l");
 
-  legend4->AddEntry(gra1 ,"ITk-only Step 1p6"   ,"l");
+  legend4->AddEntry(gra1 ,"ITk-only Step 3p0"   ,"l");
   legend4->AddEntry(gra2 ,"ITk-only Step 2p2","l");
   legend4->AddEntry(gra3 ,"ITk+HGTD Initial Step2p2","l");
   legend4->AddEntry(gra4 ,"ITk+HGTD Initial Max pT","l");
