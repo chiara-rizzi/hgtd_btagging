@@ -23,7 +23,7 @@ def create_roc_curve(labels, scores, positive_label):
     plt.show()
 
 
-f = uproot.open("../input/stef/file.root")
+f = uproot.open("/afs/cern.ch/user/c/crizzi/myeos/HGTD/btagging/input_eff_plot/Initial/file.root")
 t = f["bTag_AntiKt4EMTopoJets"]
 
 mv1 = t.array("jet_mv1").flatten()
