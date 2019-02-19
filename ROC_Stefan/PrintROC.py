@@ -78,7 +78,7 @@ gROOT.SetBatch(True)
 
 taggers=[]
 
-is8TeV=False
+is8TeV=True
 isXAOD=False
 if "8TeV" in odir:
     is8TeV=True
@@ -87,9 +87,10 @@ if "XAOD" in odir:
 
 if is8TeV and isXAOD:
     taggers=[
-        ["IP3D"    , "ip3d_llr", -12. ,   30,  3000,   8 ],
-        ["SV1"     , "sv1_llr" ,  -4. ,   13,  3000,   6 ],
-        ["IP3D+SV1", "sv1ip3d" , -10. ,   35,  3000, 797 ],
+       # ["IP3D"    , "ip3d_llr", -12. ,   30,  3000,   8 ],
+       # ["SV1"     , "sv1_llr" ,  -4. ,   13,  3000,   6 ],
+       # ["IP3D+SV1", "sv1ip3d" , -10. ,   35,  3000, 797 ],
+        ["MV1"     , "mv1"     ,   0.0 ,  0.9945 ,2000, 1 ],   #20000
         ]
 elif isXAOD:
     taggers=[
@@ -121,6 +122,16 @@ else:
               ["JetFitter"     , "jf_llr"     ,  -15,  10    ,  1000, 40 ]
               #["MVb"   , "mvb"       ,  -1.05 ,  0.8,  2000, 920 ],
               ]
+
+
+taggers=[
+    ["MV1"     , "mv1"     ,   0.0 ,  0.9945 , 500, 1 ],   #20000
+    #["IP3D"    , "ip3d_llr", -12. ,   30,  3000,   8 ],
+    #["SV1"     , "sv1_llr" ,  -4. ,   13,  3000,   6 ],
+    #["IP3D+SV1", "sv1ip3d" , -10. ,   35,  3000, 797 ]
+    ]
+
+
 effThreshold=0.70
 
 
@@ -151,12 +162,16 @@ def GetHisto(tag, intree, val):
 #	else if (jetpt[j]<100e3) Rptcut = 0.15;
  #     }
 
+    #CutBase=" jet_pt>20e3 && jet_truthMatch==1 && jet_isPU==0 && abs(PVz-truth_PVz)<0.1 && fabs(jet_eta)>2.4 && fabs(jet_eta)<4"
+    CutBase=" jet_pt>20e3 && jet_truthMatch==1 && jet_isPU==0 && abs(PVz-truth_PVz)<0.1 && fabs(jet_eta)<4"
     if val<4: 
-        cut=" jet_dRminToB>0.8 && jet_dRminToC>0.8 && jet_dRminToT>0.8  && jet_LabDr_HadF=="+str(val)+"&& jet_pt>20e3 && jet_isPU==0 && jet_truthMatch==1 && fabs(PVz-truth_PVz)<0.1 && fabs(jet_eta)>2.4"
+        cut = CutBase+" && (jet_LabDr_HadF!=4 && jet_LabDr_HadF!=5 && jet_LabDr_HadF!=15) && jet_dRminToB>0.8 && jet_dRminToC>0.8 && jet_dRminToT>0.8"
+        #cut=" jet_dRminToB>0.8 && jet_dRminToC>0.8 && jet_dRminToT>0.8  && jet_LabDr_HadF=="+str(val)+"&& jet_pt>20e3 && jet_isPU==0 && jet_truthMatch==1 && fabs(PVz-truth_PVz)<0.1 && fabs(jet_eta)>2.4"
     else: 
-        cut=" jet_LabDr_HadF=="+str(val)+"&& jet_pt>20e3 && jet_truthMatch==1 && jet_isPU==0 && fabs(PVz-truth_PVz)<0.1 && fabs(jet_eta)>2.4" 
+        cut = CutBase+" && jet_LabDr_HadF=="+str(val)
+        #cut=" jet_LabDr_HadF=="+str(val)+"&& jet_pt>20e3 && jet_truthMatch==1 && jet_isPU==0 && fabs(PVz-truth_PVz)<0.1 && fabs(jet_eta)>2.4" 
 
-    if"jet_pt<40e3": cut+=" && jet_sumtrkS_pt/jet_pt > 0.15"
+    #if"jet_pt<40e3": cut+=" && jet_sumtrkS_pt/jet_pt > 0.15"
     
     print cut
 
@@ -274,7 +289,7 @@ light.SetMinimum(1)
 light.SetMaximum(1e5)
 light.Draw()
 myLumi= "t#bar{t} simulation,"
-if is8TeV and isXAOD: myLumi+=" 8TeV, rel19"
+if is8TeV and isXAOD: myLumi+=" 13TeV, rel20"
 elif isXAOD: myLumi+=" 13 TeV, rel19"
 else       : myLumi+=" 8TeV, rel17"
 myLumi2= "jet p_{T}>25 GeV, |#eta|<2.5"

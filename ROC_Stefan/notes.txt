@@ -1,0 +1,10 @@
+first you need to run PrintRoc
+python PrintROC.py <outFolder>  <fileName> or <folderName>
+once you have run over the 4 configurations, you will have 4 outFloders produced by this code
+then you can run:
+CompareROC_4.py
+
+in CompareROC_4:
+taggerList=["MV1"]#,"IP3D","IP2D","SV1","JetFitter","MV2c10","MV2c20"]
+add IP3D+SV1
+and possibly also in PrintROC

@@ -14,8 +14,8 @@ ROOT.gStyle.SetOptTitle(0)
 
 #0.23,0.63,0.45,0.80
 
-#def make_leg(n, labels, x1=0.7, y1=0.6, x2=0.876, y2=0.87, hdata=None, textSize=0):
-def make_leg(n, labels, x1=0.23, y1=0.63, x2=0.45, y2=0.80, hdata=None, textSize=0):
+def make_leg(n, labels, x1=0.7, y1=0.6, x2=0.876, y2=0.87, hdata=None, textSize=0):
+#def make_leg(n, labels, x1=0.23, y1=0.63, x2=0.45, y2=0.80, hdata=None, textSize=0):
     if len(n)<4:
         y1 = y1 + (y2-y1)*(4.0-len(n))/4.0
     leg=ROOT.TLegend(x1,y1,x2,y2)
@@ -64,10 +64,12 @@ def make_plot(tagger, value_tagger):
 
     t = dict()
     t["ITK"] = ROOT.TChain("bTag_AntiKt4EMTopoJets")
-    t["ITK"].Add("/eos/user/c/crizzi/HGTD/btagging/output/ITK/user.crizzi.mc15_14TeV.117050.PowhegPythia_P2011C_ttbar.recon.AOD.e2176_s3348_s3347_r10900_r11003.btag_ITKonly_v0_Akt4EMTo/user.crizzi.16988484.Akt4EMTo._00051*")    
-    t["ITK"].Add("/eos/user/c/crizzi/HGTD/btagging/output/ITK/user.crizzi.mc15_14TeV.117050.PowhegPythia_P2011C_ttbar.recon.AOD.e2176_s3348_s3347_r10900_r11003.btag_ITKonly_v0_Akt4EMTo/user.crizzi.16988484.Akt4EMTo._0005*")    
+    #t["ITK"].Add("/eos/user/c/crizzi/HGTD/btagging/output/ITK/user.crizzi.mc15_14TeV.117050.PowhegPythia_P2011C_ttbar.recon.AOD.e2176_s3348_s3347_r10900_r11003.btag_ITKonly_v0_Akt4EMTo/user.crizzi.16988484.Akt4EMTo._00051*")    
+    t["ITK"].Add("/eos/user/c/crizzi/HGTD/btagging/eff_plot/input/ITK/file.root")
+    #t["ITK"].Add("/eos/user/c/crizzi/HGTD/btagging/output/ITK/user.crizzi.mc15_14TeV.117050.PowhegPythia_P2011C_ttbar.recon.AOD.e2176_s3348_s3347_r10900_r11003.btag_ITKonly_v0_Akt4EMTo/user.crizzi.16988484.Akt4EMTo._0005*")    
     t["HGTD"] = ROOT.TChain("bTag_AntiKt4EMTopoJets")
-    t["HGTD"].Add("/eos/user/c/crizzi/HGTD/btagging/output/HGTD/user.crizzi.mc15_14TeV.117050.PowhegPythia_P2011C_ttbar.recon.AOD.e2176_s3348_s3347_r10900_r11003.btag_HGTDemul_v0_Akt4EMTo/user.crizzi.17046789.Akt4EMTo._00051*")
+    t["HGTD"].Add("/eos/user/c/crizzi/HGTD/btagging/eff_plot/input/HGTD_0ps_60pscut/file.root")
+    #t["HGTD"].Add("/eos/user/c/crizzi/HGTD/btagging/output/HGTD/user.crizzi.mc15_14TeV.117050.PowhegPythia_P2011C_ttbar.recon.AOD.e2176_s3348_s3347_r10900_r11003.btag_HGTDemul_v0_Akt4EMTo/user.crizzi.17046789.Akt4EMTo._00051*")
     #t["HGTD"].Add("/eos/user/c/crizzi/HGTD/btagging/output/HGTD/user.crizzi.mc15_14TeV.117050.PowhegPythia_P2011C_ttbar.recon.AOD.e2176_s3348_s3347_r10900_r11003.btag_HGTDemul_v0_Akt4EMTo/user.crizzi.17046789.Akt4EMTo._0005*")
 
     #flavours = ["B","C","L"]

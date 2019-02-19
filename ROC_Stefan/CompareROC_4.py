@@ -26,6 +26,11 @@ def Helper():
 #    print " ..... outputfolder is a file .... please correct"
 #    sys.exit(1)
 
+leg1="ITk"
+leg2="ITk+HGTD 0 ps"
+leg3="ITk+HGTD 30 ps"
+leg4="ITk+HGTD 50 ps"
+
 odir= sys.argv[5]
 
 name1=""
@@ -67,11 +72,6 @@ infile4=sys.argv[4]
 #infile3="/eos/atlas/user/g/guindon/user.guindon.user.guindon.HGTD_30ps.root"
 #infile4="/eos/atlas/user/g/guindon/user.guindon.user.guindon.HGTD_15ps.root"
 
-leg1="ITk"
-leg2="ITk+HGTD (Full #eta)"
-leg3="ITk+HGTD (#eta > 2.0)"
-leg4="ITk+HGTD (#eta > 2.4)"
-
 f1=TFile(infile1,"R")
 f2=TFile(infile2,"R")
 f3=TFile(infile3,"R")
@@ -103,8 +103,10 @@ if name3!="": taggerList.append(name3)
 if name4!="": taggerList.append(name4)
     
 taggerList=list(set(taggerList))
+#taggerList=["MV1","IP3D","IP2D","SV1","JetFitter","MV2c10","MV2c20"]
+taggerList=["MV1"]#,"IP3D","SV1"]
+
 print taggerList
-taggerList=["MV1","IP3D","IP2D","SV1","JetFitter","MV2c10","MV2c20"]
 
 light=TH1F("b VS light","b VS light",100,0.5,1);
 light.SetTitle(";b-jet efficiency;light-jet rejection;")
@@ -124,7 +126,7 @@ light.SetMaximum(5e4)
 light.GetXaxis().SetRangeUser(0.5,1.0)
 light.Draw()
 myLumi= "ATLAS Simulation Internal"
-myLumi2= " t#bar{t} simulation, jet p_{T} > 20 GeV, |#eta|<2.4"
+myLumi2= " t#bar{t} simulation, jet p_{T} > 20 GeV, |#eta|>2.4"
 myText(0.20,0.24,1,myLumi,0.045)
 myText(0.20,0.19,1,myLumi2,0.045)
 legend4=TLegend(0.48,0.53,0.92,0.95)

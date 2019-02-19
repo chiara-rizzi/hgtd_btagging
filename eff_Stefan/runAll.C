@@ -12,7 +12,7 @@
 
   gROOT->SetBatch(kTRUE);
   gROOT->ProcessLine(".L Plotter_pt4_ratio.C++g");
-  gROOT->ProcessLine("Plotter_pt4(\"input/HGTD/file.root\",\"HGTD_Forward_Checks_Step2p2\",\"70\")");
+  gROOT->ProcessLine("Plotter_pt4(\"input/ITK/file.root\",\"HGTD_Step3p3\",\"70\")");
 
   //gROOT->ProcessLine(".L Plotter_pt4_ratio_eff.C++g");
   //gROOT->ProcessLine("Plotter_pt4(\"/eos/user/g/guindon/user.guindon.user.guindon.noHGTD_fixedJetFitter.root\",\"HGTD_Forward_Checks_ITk\",\"70\")");
