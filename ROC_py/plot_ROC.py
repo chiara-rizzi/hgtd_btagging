@@ -19,6 +19,7 @@ args = parser.parse_args()
 
 tagger=args.tagger
 largeEta=args.largeEta>0
+twoTrk = args.twoTrk>0
 
 def getVariable( tagger ):
   if tagger=="MV1":    return "jet_mv1"
@@ -89,36 +90,50 @@ condition = {
     }
 
 
-def input_arrays(t):
-    mv1 = t.array(getVariable(tagger)).flatten()
-    flav = t.array("jet_LabDr_HadF").flatten()
-    eta = t.array("jet_eta").flatten()
-    pt = t.array("jet_pt").flatten()
-    dRminToB = t.array("jet_dRminToB").flatten()
-    dRminToC = t.array("jet_dRminToC").flatten()
-    dRminToT = t.array("jet_dRminToT").flatten()
-    isPU = t.array("jet_isPU").flatten()
-    truthMatch = t.array("jet_truthMatch").flatten()
-    PVz_appo = t.array("PVz").flatten()
-    truth_PVz_appo = t.array("truth_PVz").flatten()
+def get_df(t):  
+    df = t.pandas.df(["jet_pt","jet_eta","eventnb","jet_LabDr_HadF", "jet_dRminToB", 
+                      "jet_dRminToC", "jet_dRminToT", "jet_isPU", "jet_truthMatch", "PVz", 
+                      "truth_PVz", getVariableNtrk(tagger), getVariable(tagger)])
+    df = df.set_index("eventnb")
+    
+    CutBase=" jet_pt>20000 & jet_truthMatch==1 & jet_isPU==0 & abs(PVz-truth_PVz)<0.1  & abs(jet_eta)<4"
+    if largeEta:
+      CutBase = CutBase+" & abs(jet_eta)>2.4"
+      print("add large eta requirement")
+    CutBase = CutBase+" & ( (jet_LabDr_HadF!=4 & jet_LabDr_HadF!=5 & jet_LabDr_HadF!=15 & jet_dRminToB>0.8 & jet_dRminToC>0.8 & jet_dRminToT>0.8)"
+    CutBase = CutBase+" | (jet_LabDr_HadF==5))"
 
-    truth_PVz=[]
-    PVz=[]
-    mv1_appo = t.array("jet_pt")
-    for i in range(len(mv1_appo)):
-        for j in range(len(mv1_appo[i])):
-            PVz.append(PVz_appo[i])
-            truth_PVz.append(truth_PVz_appo[i])
-        
-    index_list = []
+    df = df.query(CutBase)
 
-    for ij in range(len(pt)):
-        #if pt[ij]>20 and math.fabs(eta[ij]) > 2.4 and math.fabs(eta[ij]) < 4.0 and (not math.fabs(flav[ij])==4): 
-        if pt[ij]>20  and math.fabs(eta[ij]) < 3.6 and truthMatch[ij]==1 and isPU[ij]==0 and math.fabs(PVz[ij] - truth_PVz[ij])<0.1:
-            if math.fabs(flav[ij]) == 5 or ((not math.fabs(flav[ij])==4) and (not math.fabs(flav[ij])==15) and dRminToB[ij]>0.8 and dRminToC[ij]>0.8 and dRminToT[ij]>0.8):        
-                if (not largeEta) or math.fabs(eta[ij]) > 2.4:
-                    index_list.append(ij)
-    return np.take(flav, index_list), np.take(mv1, index_list)
+    print(df.shape)
+    return df
+
+def input_arrays(df1, twoTrk=0, df2=0):
+    print("shape df1 input: ", df1.shape)
+    if twoTrk:
+        print("shape df2 input: ", df2.shape)
+        print(len(df1.index))
+        print(len(df2.index))
+        idx = df1.index.intersection(df2.index)
+        print(len(idx))
+        df1 = df1.loc[set(idx)]
+        df2 = df2.loc[set(idx)]
+        print("shape df1 after common index: ", df1.shape)
+        print("shape df2 after common index: ", df2.shape)
+        i=0
+        for index, row in df1.iterrows():
+            if i > 10:
+                break
+            print(index)
+            print(row)
+            print(df.loc[index])
+            print("")
+            i+=1
+        return df1.as_matrix(columns=['jet_LabDr_HadF']), df1.as_matrix(columns=[getVariable(tagger)])
+    else:      
+        return df1.as_matrix(columns=['jet_LabDr_HadF']), df1.as_matrix(columns=[getVariable(tagger)])
+  
+
 
 #fig = plt.figure(figsize=(5,6))
 #fig = plt.figure()
@@ -133,7 +148,16 @@ for i,key in enumerate(keys):
     print(key)
     f = uproot.open(condition[key]["file"])
     t = f[condition[key]["tree_name"]]
-    labels, scores = input_arrays(t)
+    
+    print("type t")
+    print(type(t))
+    
+    df = get_df(t)
+    if int(i)==0:
+      df_ref = df.copy()
+      labels, scores = input_arrays(df)
+    else:
+      labels, scores = input_arrays(df, twoTrk, df_ref)
     fpr, tpr, thresholds = metrics.roc_curve(labels, scores, 5) 
     x = tpr
     y = 1/fpr
