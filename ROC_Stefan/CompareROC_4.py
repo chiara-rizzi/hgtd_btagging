@@ -10,6 +10,7 @@ from math import sqrt
 
 ROOT.gROOT.LoadMacro("AtlasStyle.C")
 ROOT.gROOT.LoadMacro("AtlasUtils.C")
+ROOT.gROOT.SetBatch(True)
 SetAtlasStyle()
 
 
@@ -26,27 +27,13 @@ def Helper():
 #    print " ..... outputfolder is a file .... please correct"
 #    sys.exit(1)
 
-leg1="ITk"
-leg2="ITk+HGTD 0 ps"
-leg3="ITk+HGTD 30 ps"
-leg4="ITk+HGTD 50 ps"
-
-odir= sys.argv[5]
+leg =["ITk", "HGTD Initial","HGTD Int. pre-repl.","HGTD Int. post-repl.","HGTD Final"]
 
 name1=""
 name2=""
 name3=""
 name4=""
-#if len(sys.argv)>6: name1=sys.argv[6]
-#if len(sys.argv)>7: name2=sys.argv[7]
-#if len(sys.argv)>8: name3=sys.argv[8]
-    
-print name1+"    "+name2+"    "+name3
-print " "
-print " "
-########################################################################################
-#########################################################################################
-gSystem.Exec("mkdir -p "+odir)
+name5=""
 
 def findStart(bin,target,curve):
     start=bin-10
@@ -61,24 +48,30 @@ def findStart(bin,target,curve):
     #print " ---> start is: "+str(start)+"  with: "+str(Tpx2)
     return start
 
-
+print sys.argv
+print len(sys.argv)
+print sys.argv[-1]
+files= []
 infile1=sys.argv[1]
-infile2=sys.argv[2]
-infile3=sys.argv[3]
-infile4=sys.argv[4]
+files.append(TFile(infile1,"R"))
+if len(sys.argv) > 3:
+    infile2=sys.argv[2]
+    files.append(TFile(infile2,"R"))
+if len(sys.argv) > 4:
+    infile3=sys.argv[3]
+    files.append(TFile(infile3,"R"))
+if len(sys.argv) > 5:
+    infile4=sys.argv[4]
+    files.append(TFile(infile4,"R"))
+if len(sys.argv) > 6:
+    infile5=sys.argv[5]
+    files.append(TFile(infile5,"R"))
 
-#infile1="/eos/user/g/guindon/user.guindon.user.guindon.noHGTD_fixedJetFitter.root"
-#infile2="/eos/atlas/user/g/guindon/user.guindon.user.guindon.HGTD_60ps.root"
-#infile3="/eos/atlas/user/g/guindon/user.guindon.user.guindon.HGTD_30ps.root"
-#infile4="/eos/atlas/user/g/guindon/user.guindon.user.guindon.HGTD_15ps.root"
-
-f1=TFile(infile1,"R")
-f2=TFile(infile2,"R")
-f3=TFile(infile3,"R")
-f4=TFile(infile4,"R")
+odir= sys.argv[-1]
+gSystem.Exec("mkdir -p "+odir)
 
 taggerList=[] ### getting it from the first file
-histoList= f1.GetListOfKeys()
+histoList= files[0].GetListOfKeys()
 iterator=TIter(histoList)
 obj=iterator()
 while obj!=None:
@@ -104,7 +97,7 @@ if name4!="": taggerList.append(name4)
     
 taggerList=list(set(taggerList))
 #taggerList=["MV1","IP3D","IP2D","SV1","JetFitter","MV2c10","MV2c20"]
-taggerList=["MV1"]#,"IP3D","SV1"]
+taggerList=["IP3D"]#,"IP3D","SV1"]
 
 print taggerList
 
@@ -137,50 +130,24 @@ legend4.SetLineColor(0)
 legend4.SetFillStyle(0)
 legend4.SetBorderSize(0)
 count=1
+colors = [kBlack, kBlue, kGreen, kRed, kYellow]
 for tag in taggerList:
+    curves=[]
     if name1!="" and name1!=tag: continue
     print tag
     myC.cd()
-    f1.cd()
-    curve=f1.Get(tag+"---bl")
-    f2.cd()
-    if name2!="": tag=name2
-    curve2=f2.Get(tag+"---bl") #### VALERIO!!!!!!
-    if curve2==None: continue
-    f3.cd()
-    if name3!="": tag=name3
-    curve3=f3.Get(tag+"---bl")
-    if curve3==None: continue
-    f4.cd()
-    if name4!="": tag=name4
-    curve4=f4.Get(tag+"---bl")
-    if curve4==None: continue
-    print curve
-    print curve2
-    print curve3
-    print curve4
-    count+=1
-    if count==5: count+=1
-    if count==9: count=kOrange
-    curve2.SetLineStyle(1)
-    curve.SetLineColor(kRed)
-    if (name1!="" and name2!=""): curve.SetLineColor(1)        
-    curve2.SetLineColor(kBlue)
-    curve.SetLineWidth(3)
-    curve2.SetLineWidth(3)
-    curve.Draw("C")
-    curve2.Draw("C")
+    for f in files:
+        f.cd()
+        curves.append(f.Get(tag+"---bl"))
+    print curves
+    ic=0
+    for curve in curves:
+        curve.SetLineStyle(1)
+        curve.SetLineColor(colors[ic])
+        curve.SetLineWidth(3)
+        curve.Draw("C")
+        ic+=1
 
-    curve3.SetLineStyle(1)
-    curve3.SetLineColor(kGreen)
-    curve3.SetLineWidth(3)
-    curve3.Draw("C")
-
-    curve4.SetLineStyle(1)
-    curve4.SetLineColor(kBlack)
-    curve4.SetLineWidth(3)
-    curve4.Draw("C")
-    
     myCx=TCanvas( "bVSl"+tag, "bVSl"+tag,800,800);
     pad_1=TPad("pad_1", "up", 0., 0.35, 1., 1.);
     pad_1.SetBottomMargin(0);
@@ -199,10 +166,8 @@ for tag in taggerList:
     myText(0.20,0.85,1,myLumi3,0.045)
     myText(0.20,0.14,1,myLumi,0.045)
     myText(0.20,0.09,1,myLumi2,0.045)
-    curve.Draw("C")
-    curve2.Draw("C")
-    curve3.Draw("C")
-    curve4.Draw("C")
+    for curve in curves:
+        curve.Draw("C")
     
     legend5=TLegend(0.55,0.7,0.92,0.90)
     legend5.SetTextFont(42)
@@ -211,16 +176,8 @@ for tag in taggerList:
     legend5.SetLineColor(0)
     legend5.SetFillStyle(0)
     legend5.SetBorderSize(0)
-    if not (name1!="" and name2!=""):
-        legend5.AddEntry(curve ,leg1,"L")
-        legend5.AddEntry(curve2,leg2,"L")
-        legend5.AddEntry(curve3,leg3,"L")
-        legend5.AddEntry(curve4,leg4,"L")
-    else:
-        legend5.AddEntry(curve ,leg1+" : "+name1,"L")
-        legend5.AddEntry(curve2,leg1+" : "+name1,"L")
-        legend5.AddEntry(curve3,leg2+" : "+name3,"L")
-        legend5.AddEntry(curve4,leg2+" : "+name3,"L")
+    for ic in range(len(curves)):
+        legend5.AddEntry(curves[ic] ,leg[ic],"L")
     legend5.Draw("SAME")
 
     myCx.Update()
@@ -239,150 +196,42 @@ for tag in taggerList:
     ratio.SetLineColor(kGray)
     ratio.Draw("HIST")
 
-    ratC=TGraph()
-    countPoint=0
-    ratC2=TGraph()
-    ratC3=TGraph()
-    ## VD: revert logic: clone the curve with fewer points!!
-    #if curve.GetN()>curve2.GetN(): ratC=curve2.Clone("ratioC")
-    #else                         : ratC=curve.Clone("ratioC")
-    #
-    #ratC2=None
-    #if name3!="":
-    #    if curve.GetN()>curve3.GetN(): ratC2=curve.Clone("ratioC")
-    #    else                         : ratC2=curve3.Clone("ratioC")
 
-    print " looping over: "+str(curve.GetN())+"    points"
-    for bin in xrange(1,curve.GetN()+1):
-        px1=Double(0)
-        py1=Double(0)
-        curve.GetPoint(bin-1,px1,py1)
-        if bin%1500==0: print str(bin)+" ....: "+str(px1)+" , "+str(py1)
-        if bin%3==0: continue
-        if px1>0.999: continue
-        if px1<light.GetXaxis().GetXmin(): break
-        clo_py2=100000
-        clo_px2=100000
-        endV=0
-        start=0
-        ##if not (name1!="" and name2!=""): start=findStart(bin,px1,curve2)
-        #for bin2 in xrange(start,ratC.GetN()+1):
-        #    #print "       bin2: "+str(bin2)
-        #    px2=Double(0)
-        #    py2=Double(0)
-        #    curve2.GetPoint(bin2-1,px2,py2)
-        #    if fabs(px2-px1)>0.05 : continue
-        #    if fabs(px2-px1)<fabs(clo_px2-px1):
-        #        clo_py2=py2
-        #        clo_px2=px2
-        #        endV=bin2
-        #    elif px2<px1:  break
-        ##print "  ---> end is: "+str(endV)+"  with: "+str(clo_px2)
-        #if clo_py2!=100000 : ratC.SetPoint(bin-1,px1,clo_py2/py1)
-        #else               : ratC.SetPoint(bin-1,px1,-1)
-        clo_py2=curve2.Eval(px1)
-        #print str(bin)+" ....: "+str(px1)+" , "+str(py1)+" ---> theEval: "+str(clo_py2)
-        if clo_py2!=100000 :
-            #print " ---> filling point: "+str(countPoint)+"  with: "+str(clo_py2/py1)
-            ratC.SetPoint(countPoint,px1,clo_py2/py1)
-            #if "Errors" in ratC.ClassName(): ratC.SetPointError(countPoint,0,0)
-            #ratC.SetPointError(countPoint,0,0)
-            countPoint+=1
+    ratC=[]
+    for i in range(len(curves)):
+        ratC.append(TGraph())
 
-    #for point in xrange(countPoint+1,ratC.GetN()+1):
-    #    ratC.RemovePoint(point)
-    ratC.SetLineWidth(3)
-    ratC.SetLineColor(4)
-    if (name1!="" and name2!=""): ratC.SetLineColor(2)
-    line1=TLine(light.GetXaxis().GetXmin(),1.,1.0,1.)
-    line1.SetLineWidth(2)
-    line1.SetLineStyle(2)
-    line1.SetLineColor(922)
-    line1.Draw("SAME")
-    ratC.Draw("SAMEL")
-    myCx.Update()
-    
-    if name3=="":
+    print " looping over: "+str(curves[0].GetN())+"    points"
+
+    for ic in range(1,len(curves)):
         countPoint=0
-        for bin in xrange(1,curve.GetN()+1):
+        for bin in xrange(1,curves[0].GetN()+1):
             px1=Double(0)
             py1=Double(0)
-            curve.GetPoint(bin-1,px1,py1)
-            if bin%1500==0: print str(bin)+" ....: "+str(px1)
+            curves[0].GetPoint(bin-1,px1,py1)
+            if bin%1500==0: print str(bin)+" ....: "+str(px1)+" , "+str(py1)
             if bin%3==0: continue
             if px1>0.999: continue
-            if px1<light.GetXaxis().GetXmin(): continue
-            clo_py2=5000
-            clo_px2=5000
+            if px1<light.GetXaxis().GetXmin(): break
+            clo_py2=100000
+            clo_px2=100000
             endV=0
             start=0
-      	    #for bin2 in xrange(start,ratC.GetN()+1):
-        	#    #print "       bin2: "+str(bin2)
-        	#    px2=Double(0)
-        	#    py2=Double(0)
-        	#    curve2.GetPoint(bin2-1,px2,py2)
-        	#    if fabs(px2-px1)>0.05 : continue
-        	#    if fabs(px2-px1)<fabs(clo_px2-px1):
-        	#        clo_py2=py2
-        	#        clo_px2=px2
-        	#        endV=bin2
-        	#    elif px2<px1:  break
-        	##print "  ---> end is: "+str(endV)+"  with: "+str(clo_px2)
-        	#if clo_py2!=100000 : ratC.SetPoint(bin-1,px1,clo_py2/py1)
-        	#else               : ratC.SetPoint(bin-1,px1,-1)
-            clo_py2=curve3.Eval(px1)
+            clo_py2=curves[ic].Eval(px1)
             if clo_py2!=100000 :
-                print " ---> filling point: "+str(countPoint)+"  with: "+str(clo_py2/py1)
-            	ratC2.SetPoint(countPoint,px1,clo_py2/py1)
-                #	if "Errors" in ratC.ClassName(): ratC.SetPointError(countPoint,0,0)
-                #ratC.SetPointError(countPoint,0,0)
-            	countPoint+=1
+                ratC[ic].SetPoint(countPoint,px1,clo_py2/py1)
+                countPoint+=1
 
-        for point in xrange(countPoint+1,ratC2.GetN()+1): ratC2.RemovePoint(point)
-        ratC2.SetLineWidth(2)
-        ratC2.SetLineColor(kGreen)
-        ratC2.Draw("SAMEL")
+        ratC[ic].SetLineWidth(3)
+        ratC[ic].SetLineColor(colors[ic])
+        line1=TLine(light.GetXaxis().GetXmin(),1.,1.0,1.)
+        line1.SetLineWidth(2)
+        line1.SetLineStyle(2)
+        line1.SetLineColor(922)
+        line1.Draw("SAME")
+        ratC[ic].Draw("SAMEL")
+        myCx.Update()
     
-    if name4=="":
-        countPoint=0
-        for bin in xrange(1,curve.GetN()+1):
-            px1=Double(0)
-            py1=Double(0)
-            curve.GetPoint(bin-1,px1,py1)
-            if bin%1500==0: print str(bin)+" ....: "+str(px1)
-            if bin%3==0: continue
-            if px1>0.999: continue
-            if px1<light.GetXaxis().GetXmin(): continue
-            clo_py2=5000
-            clo_px2=5000
-            endV=0
-            start=0
-      	    #for bin2 in xrange(start,ratC.GetN()+1):
-        	#    #print "       bin2: "+str(bin2)
-        	#    px2=Double(0)
-        	#    py2=Double(0)
-        	#    curve2.GetPoint(bin2-1,px2,py2)
-        	#    if fabs(px2-px1)>0.05 : continue
-        	#    if fabs(px2-px1)<fabs(clo_px2-px1):
-        	#        clo_py2=py2
-        	#        clo_px2=px2
-        	#        endV=bin2
-        	#    elif px2<px1:  break
-        	##print "  ---> end is: "+str(endV)+"  with: "+str(clo_px2)
-        	#if clo_py2!=100000 : ratC.SetPoint(bin-1,px1,clo_py2/py1)
-        	#else               : ratC.SetPoint(bin-1,px1,-1)
-            clo_py2=curve4.Eval(px1)
-            if clo_py2!=100000 :
-                print " ---> filling point: "+str(countPoint)+"  with: "+str(clo_py2/py1)
-            	ratC3.SetPoint(countPoint,px1,clo_py2/py1)
-                #	if "Errors" in ratC.ClassName(): ratC.SetPointError(countPoint,0,0)
-                #ratC.SetPointError(countPoint,0,0)
-            	countPoint+=1
-
-        for point in xrange(countPoint+1,ratC3.GetN()+1): ratC3.RemovePoint(point)
-        ratC3.SetLineWidth(2)
-        ratC3.SetLineColor(kBlack)
-        ratC3.Draw("SAMEL")
 
     myCx.Update()
     myCx.Print(odir+"/bVSlight__"+tag+".pdf")
@@ -398,7 +247,6 @@ myText(0.20,0.19,1,myLumi2,0.045)
 myC.Update()
 #myC.Print(odir+"/bVSlightALL.eps")
 
-################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################
 ################################################################
 
 myC2=TCanvas( "cVSl", "cVSl",900,900);
@@ -497,14 +345,7 @@ for tag in taggerList:
     ratC=TGraph()
     countPoint=0
     ratC2=TGraph()
-    #ratC=None
-    #if curve.GetN()>curve2.GetN(): ratC=curve.Clone("ratioC")
-    #else                         : ratC=curve2.Clone("ratioC")
-    #countPoint=0
-    #ratC2=None
-    #if name3!="":
-    #    if curve.GetN()>curve3.GetN(): ratC2=curve.Clone("ratioC")
-    #    else                         : ratC2=curve3.Clone("ratioC")
+
     for bin in xrange(1,curve.GetN()+1):
         px1=Double(0)
         py1=Double(0)
@@ -549,20 +390,6 @@ for tag in taggerList:
             clo_px2=100000
             endV=0
             start=0
-        	#for bin2 in xrange(start,ratC.GetN()+1):
-        	#    #print "       bin2: "+str(bin2)
-        	#    px2=Double(0)
-        	#    py2=Double(0)
-        	#    curve2.GetPoint(bin2-1,px2,py2)
-        	#    if fabs(px2-px1)>0.05 : continue
-        	#    if fabs(px2-px1)<fabs(clo_px2-px1):
-        	#        clo_py2=py2
-        	#        clo_px2=px2
-        	#        endV=bin2
-        	#    elif px2<px1:  break
-        	##print "  ---> end is: "+str(endV)+"  with: "+str(clo_px2)
-        	#if clo_py2!=100000 : ratC.SetPoint(bin-1,px1,clo_py2/py1)
-        	#else               : ratC.SetPoint(bin-1,px1,-1)
             clo_py2=curve2.Eval(px1)
             if clo_py2!=100000 :
             	ratC.SetPoint(countPoint,px1,clo_py2/py1)
@@ -580,7 +407,7 @@ for tag in taggerList:
     myCx.Print(odir+"/bVSc__"+tag+".pdf")
     #myCx.Print(odir+"/bVSc__"+tag+".eps")
     #myCx.Print(odir+"/bVSc__"+tag+".png")
-    #myCx.Print(odir+"/bVSc__"+tag+".C")
+    myCx.Print(odir+"/bVSc__"+tag+".C")
 
 myC2.cd()
 legend4.Draw()

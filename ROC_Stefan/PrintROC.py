@@ -126,9 +126,12 @@ else:
 
 taggers=[
     ["MV1"     , "mv1"     ,   0.0 ,  0.9945 , 500, 1 ],   #20000
-    #["IP3D"    , "ip3d_llr", -12. ,   30,  3000,   8 ],
-    #["SV1"     , "sv1_llr" ,  -4. ,   13,  3000,   6 ],
-    #["IP3D+SV1", "sv1ip3d" , -10. ,   35,  3000, 797 ]
+    ["IP3D+SV1", "sv1ip3d" , -10. ,   35,  3000, 797 ],
+    ["IP3D"    , "ip3d_llr", -12. ,   30,  3000,   8 ],
+    ["SV1"     , "sv1_llr" ,  -4. ,   13,  30000,   6 ]
+    ]
+taggers=[
+    ["SV1"     , "sv1_llr" ,  -4. ,   13,  30000,   6 ]
     ]
 
 
@@ -162,8 +165,8 @@ def GetHisto(tag, intree, val):
 #	else if (jetpt[j]<100e3) Rptcut = 0.15;
  #     }
 
-    #CutBase=" jet_pt>20e3 && jet_truthMatch==1 && jet_isPU==0 && abs(PVz-truth_PVz)<0.1 && fabs(jet_eta)>2.4 && fabs(jet_eta)<4"
-    CutBase=" jet_pt>20e3 && jet_truthMatch==1 && jet_isPU==0 && abs(PVz-truth_PVz)<0.1 && fabs(jet_eta)<4"
+    CutBase=" jet_pt>20e3 && jet_truthMatch==1 && jet_isPU==0 && abs(PVz-truth_PVz)<0.1 && fabs(jet_eta)>2.4 && fabs(jet_eta)<4"
+    #CutBase=" jet_pt>20e3 && jet_truthMatch==1 && jet_isPU==0 && abs(PVz-truth_PVz)<0.1 && fabs(jet_eta)<4"
     if val<4: 
         cut = CutBase+" && (jet_LabDr_HadF!=4 && jet_LabDr_HadF!=5 && jet_LabDr_HadF!=15) && jet_dRminToB>0.8 && jet_dRminToC>0.8 && jet_dRminToT>0.8"
         #cut=" jet_dRminToB>0.8 && jet_dRminToC>0.8 && jet_dRminToT>0.8  && jet_LabDr_HadF=="+str(val)+"&& jet_pt>20e3 && jet_isPU==0 && jet_truthMatch==1 && fabs(PVz-truth_PVz)<0.1 && fabs(jet_eta)>2.4"
@@ -258,7 +261,7 @@ print "TOTAL NUMBER OF ENTRIES IS: "+str(intree.GetEntries())
 print "    "
 
 countT=-1
-light=TH1F("b VS light","b VS light",100,0.3,1);
+light=TH1F("b VS light","b VS light",1000,0.3,1);
 light.SetTitle(";b-jet efficiency;light-jet rejection;")
 lightCurve=[]
 
@@ -274,9 +277,9 @@ for tag in taggers:
     lightCurve.append(curve)
     if Rej*2>light.GetMaximum(): light.SetMaximum(Rej*2)
 
-    curve2,Rej=GetROC(tag,intree,False)
-    curve2.SetLineColor(tag[5])
-    cCurve.append(curve2)
+    #curve2,Rej=GetROC(tag,intree,False)
+    #curve2.SetLineColor(tag[5])
+    #cCurve.append(curve2)
     if Rej*2>cj.GetMaximum(): cj.SetMaximum(Rej*2)
 
 ofile=TFile(odir+"/output.root","RECREATE")        

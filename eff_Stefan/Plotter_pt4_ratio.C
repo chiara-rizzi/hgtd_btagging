@@ -22,6 +22,7 @@ TChain* myT_1;
 TChain* myT_2;
 TChain* myT_3;
 TChain* myT_4;
+TChain* myT_5;
 TFile* outF;
 string outputFolder;
 string workpoint = "70";
@@ -230,6 +231,47 @@ TH1D* GetHisto4(string varName, string cutBase,
 }
 
 
+TH1D* GetHisto5(string varName, string cutBase, 
+	       string varLabel,string yLabel, 
+	       int nBin, float Max, float Min,
+	       bool normalize=false) {
+  
+  /// this is over ultra stupid but I am in a rush and I don't manage to get it to work otherwise
+  TString tmpName=varName+cutBase;
+  tmpName=tmpName.ReplaceAll(" ","").ReplaceAll("&","").ReplaceAll("(","").ReplaceAll(")","").ReplaceAll("=","").ReplaceAll(">","").ReplaceAll("<","").ReplaceAll("/1e3","").ReplaceAll(".","").ReplaceAll("+","");
+  string theName=string(tmpName);
+
+  TH1D* den  =new TH1D( theName.c_str(), theName.c_str(), nBin, Max, Min); den->Sumw2();
+  string fullVar=varName+">>"+den->GetName();
+  //  cout << "fullVar: " << fullVar << endl;
+  //  cout << "cutBase: " << cutBase << endl;
+  myT_5->Draw( fullVar.c_str(), cutBase.c_str(),"goff");//,1000000);
+  //  cout << nBin << " , " << Max << " , " << Min << endl;
+  //  cout << "Int: " << den->Integral() << endl; 
+
+  den->SetBinContent(1, den->GetBinContent(0)+den->GetBinContent(1));
+  den->SetBinError(1, sqrt(pow(den->GetBinError(0),2)+pow(den->GetBinError(1),2)));
+  den->SetBinContent(0, 0.0);
+  den->SetBinError(0, 0.0);
+  den->SetBinContent(den->GetNbinsX(), den->GetBinContent(den->GetNbinsX()));
+  den->SetBinError(den->GetNbinsX(), sqrt(pow(den->GetBinError(den->GetNbinsX()),2)+pow(den->GetBinError(den->GetNbinsX()+1),2)));
+  den->SetBinContent(den->GetNbinsX()+1, 0.0);
+  den->SetBinError(den->GetNbinsX()+1, 0.0);
+  den->SetLineWidth(3);
+  den->SetLineColor(2);
+  den->SetMarkerStyle(20);
+  den->SetMarkerSize(0.6);
+  den->SetMarkerColor(2);
+ 
+  if (normalize) {
+    float maxV=den->GetMaximum()*1.1/den->Integral();
+    den->Scale(1./den->Integral());
+    den->SetMaximum(maxV);
+  }
+  return den;
+}
+
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 TGraphAsymmErrors* GetEfficiency2ITk(string varName, 
@@ -408,6 +450,27 @@ TGraphAsymmErrors* GetEfficiency4(string varName,
   return graphHisto;
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////
+TGraphAsymmErrors* GetEfficiency5(string varName, 
+				 string cutBase, string effCut, 
+				 string varLabel,string yLabel, 
+				 int nBin, float Max, float Min, float &numC) {
+  
+  TH1D* num  =GetHisto5(varName, cutBase+effCut, varLabel, "num", nBin, Max, Min);
+  TH1D* den  =GetHisto5(varName, cutBase, varLabel, "num", nBin, Max, Min);
+  cout << " num: " << num->Integral() << " , den: " << den->Integral() << endl;
+  numC=num->Integral();
+
+  TGraphAsymmErrors* graphHisto= new TGraphAsymmErrors(num,den);
+  graphHisto->SetLineWidth(3);
+  graphHisto->SetLineColor(2);
+  graphHisto->SetMarkerStyle(20);
+  graphHisto->SetMarkerSize(0.6);
+  graphHisto->SetMarkerColor(2);
+
+  return graphHisto;
+}
+
 
 
 void GetComparison(string file1, string cutBase, string effCut,
@@ -473,7 +536,7 @@ void GetComparison(string file1, string cutBase, string effCut,
 
   cout << "TOTAL number of events is: " << myT_1->GetEntries() << endl;
 
-  string file2="input/HGTD_0ps_60pscut/file.root";
+  string file2="/eos/user/c/crizzi/HGTD/btagging/input_eff_plot/Initial_trkEffselfTag/file.root";
   myT_2=new TChain("bTag_AntiKt4EMTopoJets");
   cout << " OPENING FILE: " << file2 << endl;
     if ( file2.find("root")!=string::npos )  {
@@ -502,7 +565,7 @@ void GetComparison(string file1, string cutBase, string effCut,
 
   cout << "TOTAL number of events 2 is : " << myT_2->GetEntries() << endl;
 
-  string file3="input/HGTD_30ps_60pscut/file.root";
+  string file3="/eos/user/c/crizzi/HGTD/btagging/input_eff_plot/Intermediate_pre_Replacement_trkEffselfTag/file.root";
   myT_3=new TChain("bTag_AntiKt4EMTopoJets");
   cout << " OPENING FILE: " << file3 << endl;
   myT_3->Add( file3.c_str() );
@@ -510,10 +573,16 @@ void GetComparison(string file1, string cutBase, string effCut,
 
   cout << "TOTAL number of events 3 is : " << myT_3->GetEntries() << endl;
 
-  string file4="input/HGTD_50ps_100pscut/file.root";
+  string file4="/eos/user/c/crizzi/HGTD/btagging/input_eff_plot/Intermediate_post_Replacement_trkEffselfTag/file.root";
   myT_4=new TChain("bTag_AntiKt4EMTopoJets");
   cout << " OPENING FILE: " << file4 << endl;
   myT_4->Add( file4.c_str() );
+
+  string file5="/eos/user/c/crizzi/HGTD/btagging/input_eff_plot/Final_trkEffselfTag/file.root";
+  myT_5=new TChain("bTag_AntiKt4EMTopoJets");
+  cout << " OPENING FILE: " << file5 << endl;
+  myT_5->Add( file5.c_str() );
+
 
   cout << "TOTAL number of events 4 is : " << myT_4->GetEntries() << endl;
 
@@ -536,6 +605,11 @@ void GetComparison(string file1, string cutBase, string effCut,
 					 nBin, Max, Min, numC);
 
   TGraphAsymmErrors* gra4=GetEfficiency4( varName, 
+					 cutBase+cut_flav, effCut, 
+					 varLabel, yLabel,
+					 nBin, Max, Min, numC);
+
+  TGraphAsymmErrors* gra5=GetEfficiency5( varName, 
 					 cutBase+cut_flav, effCut, 
 					 varLabel, yLabel,
 					 nBin, Max, Min, numC);
@@ -627,9 +701,10 @@ void GetComparison(string file1, string cutBase, string effCut,
   //legend4->AddEntry(gra4 ,"ITk+HGTD (2.4 < |#eta| < 4.0)","l");
 
   legend4->AddEntry(gra1 ,"ITk-only"   ,"l");
-  legend4->AddEntry(gra2 ,"ITk+HGTD 0 ps","l");
-  legend4->AddEntry(gra3 ,"ITk+HGTD 30 ps","l");
-  legend4->AddEntry(gra4 ,"ITk+HGTD 50 ps","l");
+  legend4->AddEntry(gra2 ,"Initial","l");
+  legend4->AddEntry(gra3 ,"Int. pre-repl.","l");
+  legend4->AddEntry(gra4 ,"Int. post-repl.","l");
+  legend4->AddEntry(gra5 ,"Final","l");
   
   legend4->Draw("SAME");
  
@@ -862,7 +937,7 @@ void PrintTagger(string tagger, string file1, string cut_flav, string yLabel)  {
   /// even more ugly
   
   string CutBase="";
-  CutBase=" jet_pt>20e3 && jet_truthMatch==1 && jet_isPU==0 && abs(PVz-truth_PVz)<0.1 && abs(jet_eta)<3.6";  
+  CutBase=" jet_pt>20e3 && jet_truthMatch==1 && jet_isPU==0 && abs(PVz-truth_PVz)<0.1 && abs(jet_eta)<4";  
   
   // MV1: quite detailed info
   string effCut=" && "+getVariable(tagger, false)+">"+getCut(tagger, false)+" ";
@@ -898,11 +973,17 @@ void Plotter_pt4(const char* infile,
   Cut3=" && (jet_LabDr_HadF!=4 && jet_LabDr_HadF!=5 && jet_LabDr_HadF!=15) && jet_dRminToB>0.8 && jet_dRminToC>0.8 && jet_dRminToT>0.8"; 
 
   string yLabel="Light-jet mis-tagging efficiency";
-  //PrintTagger("MV1",file1, Cut3, yLabel);
+  PrintTagger("MV1",file1, Cut3, yLabel);
+  PrintTagger("IP3D+SV1",file1, Cut3, yLabel);
+  PrintTagger("IP3D",file1, Cut3, yLabel);
+  PrintTagger("SV1",file1, Cut3, yLabel);
 
 
   yLabel="B-jet tagging efficiency";
   PrintTagger("MV1",file1, Cut1, yLabel);
+  PrintTagger("IP3D+SV1",file1, Cut1, yLabel);
+  PrintTagger("IP3D",file1, Cut1, yLabel);
+  PrintTagger("SV1",file1, Cut1, yLabel);
 
   //PrintTagger("MV1c",file1);
   //PrintTagger("MV2c00",file1);

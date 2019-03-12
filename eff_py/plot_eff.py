@@ -52,7 +52,7 @@ def make_leg(n, labels, x1=0.7, y1=0.6, x2=0.876, y2=0.87, hdata=None, textSize=
 def make_plot(tagger, value_tagger):
     CutBase=" jet_pt>20e3 && jet_truthMatch==1 && jet_isPU==0 && abs(PVz-truth_PVz)<0.1"
     
-    CutFlav=dict()
+v    CutFlav=dict()
     CutFlav["B"]=" && jet_LabDr_HadF==5 "
     CutFlav["C"]=" && jet_LabDr_HadF==4 "
     CutFlav["L"]=" && (jet_LabDr_HadF!=4 && jet_LabDr_HadF!=5 && jet_LabDr_HadF!=15) && jet_dRminToB>0.8 && jet_dRminToC>0.8 && jet_dRminToT>0.8"
