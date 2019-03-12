@@ -5,12 +5,15 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import math
 import argparse
+from scipy import interpolate
+import collections
 
 print("Ciao Chiara!")
 
 parser = argparse.ArgumentParser(description='Make ROC curves.')
 parser.add_argument('--tagger', type=str, default="MV1")
 parser.add_argument('--largeEta', type=int, default=1)
+parser.add_argument('--twoTrk', type=int, default=1)
 
 args = parser.parse_args()
 
@@ -30,39 +33,55 @@ def getVariable( tagger ):
   if tagger=="JetFitter": return  "jet_jf_m"
   return "0"
 
+def getVariableNtrk( tagger ):
+  if tagger=="MV1":    return "jet_ip3d_ntrk"
+  if tagger=="MV1c":   return "jet_ip3d_ntrk"
+  if tagger=="MV2c00": return "jet_ip3d_ntrk"
+  if tagger=="MV2c10": return "jet_ip3d_ntrk"
+  if tagger=="MV2c20": return "jet_ip3d_ntrk"
+  if tagger=="MVb":    return "jet_ip3d_ntrk"
+  if tagger=="IP3D":   return  "jet_ip3d_ntrk"
+  if tagger=="IP3D+SV1":  return  "jet_sv1_ntrk"
+  if tagger=="SV1":       return "jet_sv1_ntrk" 
+  if tagger=="JetFitter": return  "jet_ip3d_ntrk"
+  return "0"
+
 
 keys = ["ITK", "Initial", "Int1", "Int2", "Final"]
-#keys = ["ITK","Int1"]
+#keys = ["ITK","Initial"]
 
 condition = {
     "ITK":{
-        "file":"/afs/cern.ch/user/c/crizzi/myeos/HGTD/btagging/input_eff_plot/ITK/file.root",
-        #"file":"/afs/cern.ch/user/c/crizzi/myeos/HGTD/btagging/output/Intermediate_post_Replacement/user.crizzi.mc15_14TeV.117050.PowhegPythia_s3348_s3347_r10900_r11003.btag_HGTDemul_Intermediate_post_Replacement_v1_Akt4EMTo/user.crizzi.17121712.Akt4EMTo._001967.root",
-        "tree_name":"bTag_AntiKt4EMTopoJets",
-        "label": "ITK-only",
-        "color": "k"
-        },
+    #"file":"/afs/cern.ch/user/c/crizzi/myeos/HGTD/btagging/input_eff_plot/ITK/file.root",
+         "file":"../input/ITK/file.root",
+         "tree_name":"bTag_AntiKt4EMTopoJets",
+         "label": "ITK-only",
+         "color": "k"
+    },
     "Int1":{
-        "file":"/afs/cern.ch/user/c/crizzi/myeos/HGTD/btagging/input_eff_plot/Intermediate_pre_Replacement_trkEffselfTag/file.root",
-        #"file":"/afs/cern.ch/user/c/crizzi/myeos/HGTD/btagging/output/Intermediate_post_Replacement/user.crizzi.mc15_14TeV.117050.PowhegPythia_s3348_s3347_r10900_r11003.btag_HGTDemul_Intermediate_post_Replacement_v1_Akt4EMTo/user.crizzi.17121712.Akt4EMTo._001966.root",
+        #"file":"/afs/cern.ch/user/c/crizzi/myeos/HGTD/btagging/input_eff_plot/Intermediate_pre_Replacement_trkEffselfTag/file.root",
+        "file":"../input/Intermediate_pre_Replacement_trkEffselfTag/file.root",
         "tree_name":"bTag_AntiKt4EMTopoJets",
         "label": "Int. pre-repl",
         "color": "y"
         },
     "Int2":{
-        "file":"/afs/cern.ch/user/c/crizzi/myeos/HGTD/btagging/input_eff_plot/Intermediate_post_Replacement_trkEffselfTag/file.root",
+        #"file":"/afs/cern.ch/user/c/crizzi/myeos/HGTD/btagging/input_eff_plot/Intermediate_post_Replacement_trkEffselfTag/file.root",
+        "file":"../input/Intermediate_post_Replacement_trkEffselfTag/file.root",
         "tree_name":"bTag_AntiKt4EMTopoJets",
         "label": "Int. post-repl",
         "color": "b"
         },
     "Initial":{
-        "file":"/afs/cern.ch/user/c/crizzi/myeos/HGTD/btagging/input_eff_plot/Initial_trkEffselfTag/file.root",
+        #"file":"/afs/cern.ch/user/c/crizzi/myeos/HGTD/btagging/input_eff_plot/Initial_trkEffselfTag/file.root",
+        "file":"../input/Initial_trkEffselfTag/file.root",
         "tree_name":"bTag_AntiKt4EMTopoJets",
         "label": "Initial",
         "color": "g"
         },
     "Final":{
-        "file":"/afs/cern.ch/user/c/crizzi/myeos/HGTD/btagging/input_eff_plot/Final_trkEffselfTag/file.root",
+        #"file":"/afs/cern.ch/user/c/crizzi/myeos/HGTD/btagging/input_eff_plot/Final_trkEffselfTag/file.root",
+        "file":"../input/Final_trkEffselfTag/file.root",
         "tree_name":"bTag_AntiKt4EMTopoJets",
         "label": "Final",
         "color": "r"
@@ -102,25 +121,49 @@ def input_arrays(t):
     return np.take(flav, index_list), np.take(mv1, index_list)
 
 #fig = plt.figure(figsize=(5,6))
-fig = plt.figure()
-gs = gridspec.GridSpec(1, 1,
-                       height_ratios=[1],
+#fig = plt.figure()
+gs = gridspec.GridSpec(2, 1,
+                       height_ratios=[3,1],
                        hspace=0.05)
 ax1 = plt.subplot(gs[0])
 plt.title(tagger+' ROC curve') #
 fpr_all={}
 tpr_all={}
-for key in keys:
+for i,key in enumerate(keys):
+    print(key)
     f = uproot.open(condition[key]["file"])
     t = f[condition[key]["tree_name"]]
     labels, scores = input_arrays(t)
     fpr, tpr, thresholds = metrics.roc_curve(labels, scores, 5) 
-    fpr_all[key]=fpr
-    tpr_all[key]=tpr
+    x = tpr
+    y = 1/fpr
+    points = list(zip(x, y))
+    #print("   Removing duplicates...")
+    x1 = []
+    y1 = []
+    for ip,p in enumerate(points):
+      if p[0] > 0.29999:
+        if p[0] > points[ip-1][0]:
+          x1.append(p[0])
+          y1.append(p[1])
+    x = np.array(x1)
+    y = np.array(y1)
+    if i==0:
+      print("   setting reference_beff")
+      xnew = x      
+    #print("   x: ",x[0:20])
+    #print("   y: ",y[0:20])
+    #f2 = interpolate.interp1d(x, y, kind='cubic',fill_value="extrapolate")
+    #ynew=f2(xnew)
+    tck = interpolate.splrep(x, y)
+    ynew = interpolate.splev(xnew, tck, der=0)
+
+    fpr_all[key]=ynew
+    tpr_all[key]=xnew
     roc_auc = metrics.auc(fpr, tpr)
     print(condition[key]['label']) 
     print(roc_auc)
-    plt.semilogy(tpr, 1./fpr, label=condition[key]['label']+' AUC = %0.4f'% roc_auc, color=condition[key]['color'])
+    plt.semilogy(xnew, ynew, label=condition[key]['label']+' AUC = %0.4f'% roc_auc, color=condition[key]['color'])
     
 plt.legend(loc='best') 
 plt.xlim([0.3,1.0])
@@ -133,6 +176,59 @@ if largeEta:
     plt.text(0.05, 0.10, 'jet p$_{T}>$ 20 GeV, $|\eta|>$2.4', size='medium',transform=ax1.transAxes)
 else:
     plt.text(0.05, 0.10, 'jet p$_{T}>$ 20 GeV', size='medium',transform=ax1.transAxes)
+plt.grid(True)
+
+ax2 = plt.subplot(gs[1])
+for i,key in enumerate(keys):
+    print("\n")
+    print(key)
+    y=fpr_all[key] # light rejection
+    x=tpr_all[key]
+    #x=np.nan_to_num(x)
+    #y=np.nan_to_num(y)
+    #print("   x: ",x[0:20])
+    #print("   y: ",y[0:20])
+    #tck = interpolate.splrep(x, y, s=0)
+    '''
+    points = list(zip(x, y))
+    #print("   Removing duplicates...")
+    x1 = []
+    y1 = []
+    for ip,p in enumerate(points):
+      if p[0] > 0.29999:
+        if p[0] > points[ip-1][0]:
+          x1.append(p[0])
+          y1.append(p[1])
+    x = np.array(x1)
+    y = np.array(y1)
+    '''
+    #print("   Done eemoving duplicates")        
+    '''
+    if i==0:
+      print("   setting reference_beff")
+      xnew = x      
+    #print("   x: ",x[0:20])
+    #print("   y: ",y[0:20])
+    #ynew = interpolate.splev(xnew, tck, der=0)
+      
+    f2 = interpolate.interp1d(x, y, kind='cubic',fill_value="extrapolate")
+    ynew=f2(xnew)
+    #print("   ynew: ",ynew[0:20])
+    '''
+    if i==0:
+      reference_ynew = y
+    #print("   reference_ynew: ",reference_ynew[0:20])
+    ljr_ratio = np.divide(y, reference_ynew)
+    #print("   ljr_ratio: ",ljr_ratio[0:20])
+    print(condition[key]['label'])
+    plt.plot(x, ljr_ratio, color=condition[key]['color'])
+
+#plt.legend(loc='best') 
+plt.xlim([0.3,1.0])
+#plt.ylim([0.1,2])
+plt.ylabel('Ratio to ITK')
+plt.xlabel('b-jet efficiency')
+
 #ax.show()
 #plt.gca().axes.get_xaxis().set_visible(False)
 #ax1.set_xticklabels( () )
