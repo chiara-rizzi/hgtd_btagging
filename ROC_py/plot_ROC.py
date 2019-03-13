@@ -20,7 +20,11 @@ args = parser.parse_args()
 
 tagger=args.tagger
 largeEta=args.largeEta>0
+smallEta=args.largeEta==-1
 twoTrk = args.twoTrk>0
+
+print("largeEta:",largeEta)
+print("smallEta:",smallEta)
 
 def getVariable( tagger ):
   if tagger=="MV1":    return "jet_mv1"
@@ -102,6 +106,9 @@ def get_df(t):
     if largeEta:
       CutBase = CutBase+" & abs(jet_eta)>2.4"
       print("add large eta requirement")
+    if smallEta:
+      CutBase = CutBase+" & abs(jet_eta)<2.4"
+      print("add small eta requirement")
     CutBase = CutBase+" & ( (jet_LabDr_HadF!=4 & jet_LabDr_HadF!=5 & jet_LabDr_HadF!=15 & jet_dRminToB>0.8 & jet_dRminToC>0.8 & jet_dRminToT>0.8)"
     CutBase = CutBase+" | (jet_LabDr_HadF==5))"
 
@@ -110,18 +117,21 @@ def get_df(t):
     print(df.shape)
     return df
 
-def input_arrays(df1, twoTrk=0, df2=0):
+def input_arrays(df1, ITKcomp=0, twoTrk=0, df2=0):
     print("shape df1 input: ", df1.shape)
-    if twoTrk:
+    if ITKcomp:
         # index in common with ITK-only
         idx = sorted(df1.index.intersection(df2.index)) 
         df1 = df1.loc[idx] 
         df2 = df2.loc[idx]
-        # < 2 trk: use ITK, >=2 trk: use HGTS
-        df2_sel = df2.query(getVariableNtrk(tagger)+" < 2")
-        df1_sel = df1.loc[df1.index.difference(df2_sel.index)]
-        df3 = pd.concat([df1_sel,df2_sel])
-        return df3.as_matrix(columns=['jet_LabDr_HadF']), df3.as_matrix(columns=[getVariable(tagger)])
+        if twoTrk:
+            # < 2 trk: use ITK, >=2 trk: use HGTS
+            df2_sel = df2.query(getVariableNtrk(tagger)+" < 2")
+            df1_sel = df1.loc[df1.index.difference(df2_sel.index)]
+            df3 = pd.concat([df1_sel,df2_sel])
+            return df3.as_matrix(columns=['jet_LabDr_HadF']), df3.as_matrix(columns=[getVariable(tagger)])
+        else:
+            return df1.as_matrix(columns=['jet_LabDr_HadF']), df1.as_matrix(columns=[getVariable(tagger)])
     else:      
         return df1.as_matrix(columns=['jet_LabDr_HadF']), df1.as_matrix(columns=[getVariable(tagger)])
   
@@ -149,7 +159,7 @@ for i,key in enumerate(keys):
       df_ref = df.copy()
       labels, scores = input_arrays(df)
     else:
-      labels, scores = input_arrays(df, twoTrk, df_ref)
+      labels, scores = input_arrays(df, 1, twoTrk, df_ref)
     fpr, tpr, thresholds = metrics.roc_curve(labels, scores, 5) 
     x = tpr
     y = 1/fpr
@@ -190,6 +200,8 @@ plt.text(0.05, 0.25, 'ATLAS Simulation Internal', size='large',transform=ax1.tra
 plt.text(0.05, 0.15, '$t\overline{t}$ simulation', size='medium',transform=ax1.transAxes)
 if largeEta:
     plt.text(0.05, 0.10, 'jet p$_{T}>$ 20 GeV, $|\eta|>$2.4', size='medium',transform=ax1.transAxes)
+elif smallEta:
+  plt.text(0.05, 0.10, 'jet p$_{T}>$ 20 GeV, $|\eta|<$2.4', size='medium',transform=ax1.transAxes)
 else:
     plt.text(0.05, 0.10, 'jet p$_{T}>$ 20 GeV', size='medium',transform=ax1.transAxes)
 plt.grid(True)
@@ -261,6 +273,8 @@ plt.grid(True)
 name_plot = "roc_"+getVariable(tagger)
 if largeEta:
   name_plot+="_largeEta"
+if smallEta:
+  name_plot+="_smallEta"
 if twoTrk:
   name_plot+="_twoTrk"
 name_plot+="_trkEffselfTag"
