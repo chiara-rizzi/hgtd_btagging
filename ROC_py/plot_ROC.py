@@ -7,6 +7,7 @@ import math
 import argparse
 from scipy import interpolate
 import collections
+import pandas as pd
 
 print("Ciao Chiara!")
 
@@ -94,8 +95,9 @@ def get_df(t):
     df = t.pandas.df(["jet_pt","jet_eta","eventnb","jet_LabDr_HadF", "jet_dRminToB", 
                       "jet_dRminToC", "jet_dRminToT", "jet_isPU", "jet_truthMatch", "PVz", 
                       "truth_PVz", getVariableNtrk(tagger), getVariable(tagger)])
-    df = df.set_index("eventnb")
-    
+    df=df.rename_axis(index=['entry', 'jet_pos'])
+    df=df.reset_index(level=['jet_pos'])
+    df = df.set_index(["eventnb","jet_pos"])    
     CutBase=" jet_pt>20000 & jet_truthMatch==1 & jet_isPU==0 & abs(PVz-truth_PVz)<0.1  & abs(jet_eta)<4"
     if largeEta:
       CutBase = CutBase+" & abs(jet_eta)>2.4"
@@ -111,25 +113,15 @@ def get_df(t):
 def input_arrays(df1, twoTrk=0, df2=0):
     print("shape df1 input: ", df1.shape)
     if twoTrk:
-        print("shape df2 input: ", df2.shape)
-        print(len(df1.index))
-        print(len(df2.index))
-        idx = df1.index.intersection(df2.index)
-        print(len(idx))
-        df1 = df1.loc[set(idx)]
-        df2 = df2.loc[set(idx)]
-        print("shape df1 after common index: ", df1.shape)
-        print("shape df2 after common index: ", df2.shape)
-        i=0
-        for index, row in df1.iterrows():
-            if i > 10:
-                break
-            print(index)
-            print(row)
-            print(df.loc[index])
-            print("")
-            i+=1
-        return df1.as_matrix(columns=['jet_LabDr_HadF']), df1.as_matrix(columns=[getVariable(tagger)])
+        # index in common with ITK-only
+        idx = sorted(df1.index.intersection(df2.index)) 
+        df1 = df1.loc[idx] 
+        df2 = df2.loc[idx]
+        # < 2 trk: use ITK, >=2 trk: use HGTS
+        df2_sel = df2.query(getVariableNtrk(tagger)+" < 2")
+        df1_sel = df1.loc[df1.index.difference(df2_sel.index)]
+        df3 = pd.concat([df1_sel,df2_sel])
+        return df3.as_matrix(columns=['jet_LabDr_HadF']), df3.as_matrix(columns=[getVariable(tagger)])
     else:      
         return df1.as_matrix(columns=['jet_LabDr_HadF']), df1.as_matrix(columns=[getVariable(tagger)])
   
@@ -266,8 +258,11 @@ plt.grid(True)
 #    print(tpr_all[key])
 
 
+name_plot = "roc_"+getVariable(tagger)
 if largeEta:
-    plt.savefig("roc_"+getVariable(tagger)+"_largeEta_trkEffselfTag.pdf")   
-else:
-    plt.savefig("roc_"+getVariable(tagger)+".pdf")   
+  name_plot+="_largeEta"
+if twoTrk:
+  name_plot+="_twoTrk"
+name_plot+="_trkEffselfTag"
+plt.savefig(name_plot+".pdf")   
 
