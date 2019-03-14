@@ -13,8 +13,9 @@ print("Ciao Chiara!")
 
 parser = argparse.ArgumentParser(description='Make ROC curves.')
 parser.add_argument('--tagger', type=str, default="MV1")
-parser.add_argument('--largeEta', type=int, default=1)
+parser.add_argument('--largeEta', type=int, default=0)
 parser.add_argument('--twoTrk', type=int, default=1)
+parser.add_argument('--bEff', type=int, default=1)
 
 args = parser.parse_args()
 
@@ -22,9 +23,24 @@ tagger=args.tagger
 largeEta=args.largeEta>0
 smallEta=args.largeEta==-1
 twoTrk = args.twoTrk>0
+bEff = args.bEff>0
 
 print("largeEta:",largeEta)
 print("smallEta:",smallEta)
+
+def getCut( tagger ):
+  if tagger=="MV1":  return  0.945487725
+  if tagger=="MV1c": return  0.779833333333
+  if tagger=="MV2c00": return  0.0308333333333
+  if tagger=="MV2c10": return  -0.00416666666667
+  if tagger=="MV2c20" : return  -0.0215
+  if tagger=="IP3D":      return  2.007
+  if tagger=="IP3D+SV1":  return  4.3625
+  if tagger=="MVb":       return  -0.120991666667
+  if tagger=="SV1":       return  -97
+  if tagger=="JetFitter": return  -1.6125 
+  return 0
+
 
 def getVariable( tagger ):
   if tagger=="MV1":    return "jet_mv1"
@@ -144,8 +160,9 @@ gs = gridspec.GridSpec(2, 1,
                        hspace=0.05)
 ax1 = plt.subplot(gs[0])
 plt.title(tagger+' ROC curve') #
-fpr_all={}
+eff_all={}
 tpr_all={}
+fpr_all={}
 for i,key in enumerate(keys):
     print(key)
     f = uproot.open(condition[key]["file"]) # open file
@@ -156,10 +173,38 @@ for i,key in enumerate(keys):
     else:
       df = filter_df(df, 1, twoTrk, df_ref)
 
-    labels, scores = input_arrays(df)
-    fpr, tpr, thresholds = metrics.roc_curve(labels, scores, 5) 
-    x = tpr
-    y = 1/fpr
+    print("So far so good!")
+
+    
+    df['jet_eta_bin'] = pd.cut(df['jet_eta'].abs(), bins=[0,0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0])
+    #bins = df.groupby('jet_eta_bin').apply(lambda g: (g.shape[0], g.loc[g[getVariable(tagger)] > getCut(tagger), :].shape[0]))
+    #print(bins)
+
+    def get_ratio(g, invert=False):
+      num = float(g.loc[g[getVariable(tagger)] > getCut(tagger), :].shape[0])
+      den = float(g.shape[0])
+      if invert:
+        num,den = den,num
+      try:
+        return num/den
+      except ZeroDivisionError:
+        return np.nan
+
+    if bEff:
+      eff = df.loc[df["jet_LabDr_HadF"]==5].groupby('jet_eta_bin').apply(get_ratio)
+    else:
+      eff = df.loc[df["jet_LabDr_HadF"]==0].groupby('jet_eta_bin').apply(get_ratio, invert=True)
+
+    eff = eff.to_frame()
+    eff.columns = ['eff']
+    eff["jet_eta_bin"] = eff.index
+    eff["jet_eta_plot"] = eff["jet_eta_bin"].apply(lambda g: (g.right+g.left)/2)
+    #print(df)
+    
+    # here
+    x = eff.as_matrix(columns=['jet_eta_plot']) 
+    y = eff.as_matrix(columns=['eff'])
+    """
     points = list(zip(x, y))
     #print("   Removing duplicates...")
     x1 = []
@@ -171,34 +216,39 @@ for i,key in enumerate(keys):
           y1.append(p[1])
     x = np.array(x1)
     y = np.array(y1)
-    if i==0:
-      print("   setting reference_beff")
-      xnew = x      
+    """
+    #if i==0:
+    #  print("   setting reference_beff")
+    #  xnew = x      
     #print("   x: ",x[0:20])
     #print("   y: ",y[0:20])
-    tck = interpolate.splrep(x, y)
-    ynew = interpolate.splev(xnew, tck, der=0)
-
-    fpr_all[key]=ynew
-    tpr_all[key]=xnew
-    roc_auc = metrics.auc(fpr, tpr)
+    #tck = interpolate.splrep(x, y)
+    #ynew = interpolate.splev(xnew, tck, der=0)
+    tpr_all[key]=x
+    fpr_all[key]=y
+    #roc_auc = metrics.auc(fpr, tpr)
     print(condition[key]['label']) 
-    print(roc_auc)
-    plt.semilogy(xnew, ynew, label=condition[key]['label']+' AUC = %0.4f'% roc_auc, color=condition[key]['color'])
+    #print(roc_auc)
+    print(y)
+    plt.plot(x, y, label=condition[key]['label'], color=condition[key]['color'])
     
 plt.legend(loc='best') 
-plt.xlim([0.5,1.0])
-plt.ylim([1,3000])
-plt.ylabel('light-jet rejection')
-plt.xlabel('b-jet efficiency')
+plt.xlim([0.,4.])
+if bEff:
+  plt.ylim([0.,1.0])
+  plt.ylabel('b-jet efficiency')
+else:
+  plt.ylim([0.,2500])
+  plt.ylabel('light mistag rate')
+plt.xlabel('jet eta')
 plt.text(0.02, 0.25, 'ATLAS Simulation Internal', size='large',transform=ax1.transAxes)
 plt.text(0.02, 0.15, '$t\overline{t}$ simulation', size='medium',transform=ax1.transAxes)
 if largeEta:
-    plt.text(0.05, 0.10, 'jet p$_{T}>$ 20 GeV, $|\eta|>$2.4', size='medium',transform=ax1.transAxes)
+    plt.text(0.02, 0.10, 'jet p$_{T}>$ 20 GeV, $|\eta|>$2.4', size='medium',transform=ax1.transAxes)
 elif smallEta:
-  plt.text(0.05, 0.10, 'jet p$_{T}>$ 20 GeV, $|\eta|<$2.4', size='medium',transform=ax1.transAxes)
+  plt.text(0.02, 0.10, 'jet p$_{T}>$ 20 GeV, $|\eta|<$2.4', size='medium',transform=ax1.transAxes)
 else:
-    plt.text(0.05, 0.10, 'jet p$_{T}>$ 20 GeV', size='medium',transform=ax1.transAxes)
+    plt.text(0.02, 0.10, 'jet p$_{T}>$ 20 GeV', size='medium',transform=ax1.transAxes)
 plt.grid(True)
 
 ax2 = plt.subplot(gs[1])
@@ -215,14 +265,17 @@ for i,key in enumerate(keys):
     print(condition[key]['label'])
     plt.plot(x, ljr_ratio, color=condition[key]['color'])
 
-plt.xlim([0.5,1.0])
+plt.xlim([0.,4.])
 plt.ylim([0.8,2])
 plt.ylabel('Ratio to ITK')
 plt.xlabel('b-jet efficiency')
 
 plt.grid(True)
 
-name_plot = "roc_"+getVariable(tagger)
+if bEff:
+  name_plot = "eff_"+getVariable(tagger)
+else:
+  name_plot = "mistag_"+getVariable(tagger)
 if largeEta:
   name_plot+="_largeEta"
 if smallEta:
