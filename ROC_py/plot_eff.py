@@ -51,7 +51,7 @@ def getVariable( tagger ):
   if tagger=="MVb":    return "jet_mvb"
   if tagger=="IP3D":   return  "jet_ip3d_llr"
   if tagger=="IP3D+SV1":  return  "jet_sv1ip3d"
-  if tagger=="SV1":       return "jet_sv1_m" 
+  if tagger=="SV1":       return "jet_sv1_llr" 
   if tagger=="JetFitter": return  "jet_jf_m"
   return "0"
 
