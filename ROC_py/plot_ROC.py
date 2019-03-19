@@ -199,12 +199,16 @@ if onlyCommonEvents:
 min_max_x = 1
 x_all={}
 y_all={}
+#roc_auc_all={}
 for i,key in enumerate(keys):
     df = df_all[key]
     print(key)
     print(df.shape)
     labels, scores = input_arrays(df)
     fpr, tpr, thresholds = metrics.roc_curve(labels, scores, 5) 
+    #roc_auc = metrics.auc(tpr, fpr)
+    #print(roc_auc)
+    #roc_auc_all[key] = roc_auc
     x = tpr
     y = 1/fpr
     if x[-2]<min_max_x: min_max_x = x[-2] # for SV1 and the other ones with endpoint
@@ -237,10 +241,10 @@ for i,key in enumerate(keys):
 
     fpr_all[key]=ynew
     tpr_all[key]=xnew
-    roc_auc = metrics.auc(fpr, tpr)
-    print(condition[key]['label']) 
-    print(roc_auc)
-    plt.semilogy(xnew, ynew, label=condition[key]['label']+' AUC = %0.4f'% roc_auc, color=condition[key]['color'])
+
+    print(condition[key]['label'])     
+    #plt.semilogy(xnew, ynew, label=condition[key]['label']+' AUC = %0.4f'% roc_auc_all[key], color=condition[key]['color'])
+    plt.semilogy(xnew, ynew, label=condition[key]['label'], color=condition[key]['color'])
     
 plt.legend(loc='best') 
 plt.xlim([0.5,1.0])

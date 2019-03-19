@@ -69,13 +69,14 @@ def getVariableNtrk( tagger ):
   return "0"
 
 
-keys = ["ITK", "Initial", "Int1", "Int2", "Final"]
-#keys = ["ITK","Initial"]
+#keys = ["ITK", "Initial", "Int1", "Int2", "Final"]
+keys = ["ITK"]
 
-condition = {
+condition= {
     "ITK":{
     #"file":"/afs/cern.ch/user/c/crizzi/myeos/HGTD/btagging/input_eff_plot/ITK/file.root",
          "file":"../input/ITK/file.root",
+         #"file":"../input/compare/Chiara_ntuple.root",
          "tree_name":"bTag_AntiKt4EMTopoJets",
          "label": "ITK-only",
          "color": "k"
@@ -115,10 +116,11 @@ def get_df(t):
     df = t.pandas.df(["jet_pt","jet_eta","eventnb","jet_LabDr_HadF", "jet_dRminToB", 
                       "jet_dRminToC", "jet_dRminToT", "jet_isPU", "jet_truthMatch", "PVz", 
                       "truth_PVz", getVariableNtrk(tagger), getVariable(tagger)])
+    df["jet_pt"] = df["jet_pt"]/1000.
     df=df.rename_axis(index=['entry', 'jet_pos'])
     df=df.reset_index(level=['jet_pos'])
     df = df.set_index(["eventnb","jet_pos"])    
-    CutBase=" jet_pt>20000 & jet_truthMatch==1 & jet_isPU==0 & abs(PVz-truth_PVz)<0.1  & abs(jet_eta)<4"
+    CutBase=" jet_pt>20 & jet_truthMatch==1 & jet_isPU==0 & abs(PVz-truth_PVz)<0.1  & abs(jet_eta)<4"
     if largeEta:
       CutBase = CutBase+" & abs(jet_eta)>2.4"
       print("add large eta requirement")
@@ -142,7 +144,7 @@ def filter_df(df1, ITKcomp=0, twoTrk=0, df2=0):
         df2 = df2.loc[idx]
         if twoTrk:
             # < 2 trk: use ITK, >=2 trk: use HGTS
-            df2_sel = df2.query(getVariableNtrk(tagger)+" < 2 | abs(jet_eta)<2.4")
+            df2_sel = df2.query(getVariableNtrk(tagger)+" < 2")
             df1_sel = df1.loc[df1.index.difference(df2_sel.index)]
             df3 = pd.concat([df1_sel,df2_sel])
             return df3
@@ -176,9 +178,9 @@ for i,key in enumerate(keys):
     print("So far so good!")
 
     
-    df['jet_eta_bin'] = pd.cut(df['jet_eta'].abs(), bins=[0,0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0])
-    #bins = df.groupby('jet_eta_bin').apply(lambda g: (g.shape[0], g.loc[g[getVariable(tagger)] > getCut(tagger), :].shape[0]))
-    #print(bins)
+    df['jet_eta_bin'] = pd.cut(df['jet_eta'].abs(), bins=[0, 0.5, 1.0, 1.5, 2.0, 2.4, 2.8, 3.2, 4.0])
+    df['jet_pt_bin'] =  pd.cut(df['jet_pt'],        bins=[0, 20, 30, 40, 60, 85, 110, 150, 250])
+    
 
     def get_ratio(g, invert=False):
       num = float(g.loc[g[getVariable(tagger)] > getCut(tagger), :].shape[0])
@@ -190,48 +192,35 @@ for i,key in enumerate(keys):
       except ZeroDivisionError:
         return np.nan
 
-    if bEff:
-      eff = df.loc[df["jet_LabDr_HadF"]==5].groupby('jet_eta_bin').apply(get_ratio)
-    else:
-      eff = df.loc[df["jet_LabDr_HadF"]==0].groupby('jet_eta_bin').apply(get_ratio, invert=True)
+    eff = df.loc[df["jet_LabDr_HadF"]==5].groupby(['jet_eta_bin','jet_pt_bin']).apply(get_ratio)
 
     eff = eff.to_frame()
     eff.columns = ['eff']
-    eff["jet_eta_bin"] = eff.index
-    eff["jet_eta_plot"] = eff["jet_eta_bin"].apply(lambda g: (g.right+g.left)/2)
-    #print(df)
+    #entries_tagged = entries_tagged.to_frame()
+    #print(eff.to_string())
+
+    def print_tf2(eff):
+      tf2_string = "Double_t func(Double_t *val, Double_t *par) { \n"
+      tf2_string += "Float_t pt = val[0]; \n"
+      tf2_string += "Float_t eta = val[1]; \n"
+      tf2_string += "Double_t eff =0; \n"
+      for index, row in eff.iterrows():
+        pt_low = index[1].left
+        pt_high = index[1].right
+        eta_low = index[0].left
+        eta_high = index[0].right
+        value = row["eff"]
+        tf2_string += 'if (pt > {} && pt <= {} && eta > {} && eta <= {})  eff = {}; \n'.format(pt_low, pt_high, eta_low, eta_high, value)
+      tf2_string += "\n"
+      tf2_string += "return eff; \n}"
+
+      return tf2_string
     
-    # here
-    x = eff.as_matrix(columns=['jet_eta_plot']) 
-    y = eff.as_matrix(columns=['eff'])
-    """
-    points = list(zip(x, y))
-    #print("   Removing duplicates...")
-    x1 = []
-    y1 = []
-    for ip,p in enumerate(points):
-      if p[0] > 0.29999:
-        if p[0] > points[ip-1][0]:
-          x1.append(p[0])
-          y1.append(p[1])
-    x = np.array(x1)
-    y = np.array(y1)
-    """
-    #if i==0:
-    #  print("   setting reference_beff")
-    #  xnew = x      
-    #print("   x: ",x[0:20])
-    #print("   y: ",y[0:20])
-    #tck = interpolate.splrep(x, y)
-    #ynew = interpolate.splev(xnew, tck, der=0)
-    tpr_all[key]=x
-    fpr_all[key]=y
-    #roc_auc = metrics.auc(fpr, tpr)
-    print(condition[key]['label']) 
-    #print(roc_auc)
-    print(y)
-    plt.plot(x, y, label=condition[key]['label'], color=condition[key]['color'])
-    
+    print(print_tf2(eff))
+
+
+"""    
+plt.plot(x, y, label=condition[key]['label'], color=condition[key]['color'])
 plt.legend(loc='best') 
 plt.xlim([0.,4.])
 if bEff:
@@ -254,15 +243,15 @@ plt.grid(True)
 
 ax2 = plt.subplot(gs[1])
 for i,key in enumerate(keys):
-    print("\n")
+    print('\n')
     print(key)
     y=fpr_all[key] # light rejection
     x=tpr_all[key]
     if i==0:
       reference_ynew = y
-    #print("   reference_ynew: ",reference_ynew[0:20])
+    #print('   reference_ynew: ',reference_ynew[0:20])
     ljr_ratio = np.divide(y, reference_ynew)
-    #print("   ljr_ratio: ",ljr_ratio[0:20])
+    #print('   ljr_ratio: ',ljr_ratio[0:20])
     print(condition[key]['label'])
     plt.plot(x, ljr_ratio, color=condition[key]['color'])
 
@@ -274,15 +263,16 @@ plt.xlabel('jet eta')
 plt.grid(True)
 
 if bEff:
-  name_plot = "eff_"+getVariable(tagger)
+  name_plot = 'eff_'+getVariable(tagger)
 else:
-  name_plot = "mistag_"+getVariable(tagger)
+  name_plot = 'mistag_'+getVariable(tagger)
 if largeEta:
-  name_plot+="_largeEta"
+  name_plot+='_largeEta'
 if smallEta:
-  name_plot+="_smallEta"
+  name_plot+='_smallEta'
 if twoTrk:
-  name_plot+="_twoTrk"
-name_plot+="_trkEffselfTag"
-plt.savefig(name_plot+".pdf")   
+  name_plot+='_twoTrk'
+name_plot+='_trkEffselfTag'
+plt.savefig(name_plot+'.pdf')
+"""   
 
