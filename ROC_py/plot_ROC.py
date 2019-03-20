@@ -121,7 +121,8 @@ def get_df(t):
         df = t.pandas.df(["jet_pt","jet_eta","eventnb","jet_LabDr_HadF", "jet_dRminToB", 
                           "jet_dRminToC", "jet_dRminToT", "jet_isPU", "jet_truthMatch", "PVz", 
                           "truth_PVz", getVariableNtrk(tagger)]+var_needed_for_ip3d_sv1) # add all the variables needed to compute IP3D+SV1
-        df["jet_my_sv1ip3d"] = df.apply (lambda row: compute_ip3d_sv1(row), axis=1)
+        #df["jet_my_sv1ip3d"] = df.apply (lambda row: compute_ip3d_sv1(row), axis=1) # sloooow
+        df["jet_my_sv1ip3d"] = ((df["jet_ip3d_pu"]>0) & (df["jet_ip3d_pb"] >0))*np.log ( df["jet_ip3d_pb"] / df["jet_ip3d_pu"]) + ((df["jet_sv1_pu"]>0) & (df["jet_sv1_pb"] >0))*np.log ( df["jet_sv1_pb"] / df["jet_sv1_pu"] ) - (df["jet_sv1_ntrkv"]<1)*1.55
     else:
         df = t.pandas.df(["jet_pt","jet_eta","eventnb","jet_LabDr_HadF", "jet_dRminToB", 
                           "jet_dRminToC", "jet_dRminToT", "jet_isPU", "jet_truthMatch", "PVz", 

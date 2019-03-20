@@ -27,10 +27,10 @@ def getCut( tagger ):
   if tagger=="MV2c00": return  0.0308333333333
   if tagger=="MV2c10": return  -0.00416666666667
   if tagger=="MV2c20" : return  -0.0215
-  if tagger=="IP3D":      return  2.007
-  if tagger=="IP3D+SV1":  return  4.3625
+  if tagger=="IP3D":      return  2.007 # 70: 2.431553, 85: -0.149126
+  if tagger=="IP3D+SV1":  return  4.3625 # 70: 2.133121, 85: -1.572315
   if tagger=="MVb":       return  -0.120991666667
-  if tagger=="SV1":       return  -97
+  if tagger=="SV1":       return  -97 # 70: -1.358764, 85: -98
   if tagger=="JetFitter": return  -1.6125 
   return 0
 
@@ -89,8 +89,8 @@ def get_ratio(g, invert=False):
   except ZeroDivisionError:
     return np.nan
 
-keys = ["ITK", "Initial", "Int1", "Int2", "Final"]
-#keys = ["ITK"]
+#keys = ["ITK", "Initial", "Int1", "Int2", "Final"]
+keys = ["ITK"]
 
 condition= {
     "ITK":{
@@ -134,12 +134,12 @@ condition= {
 def compute_ip3d_sv1(row):
     if  row["jet_ip3d_pu"] >0 and row["jet_ip3d_pb"] >0:
         if  row["jet_ip3d_pu"] != 1 or  row["jet_ip3d_pu"] != 1.e9:
-          IP3DPlusSV1w= math.log ( row["jet_ip3d_pb"] / row["jet_ip3d_pu"] ) # logarithm neperien
+          IP3DPlusSV1w= np.log ( row["jet_ip3d_pb"] / row["jet_ip3d_pu"] ) # logarithm neperien
     else:
         IP3DPlusSV1w = 0
     if row["jet_sv1_ntrkv"]>0: #//SV1 found.
         if  row["jet_sv1_pu"] >0 and row["jet_sv1_pb"] >0 :
-           IP3DPlusSV1w += math.log ( row["jet_sv1_pb"] / row["jet_sv1_pu"] );
+           IP3DPlusSV1w += np.log ( row["jet_sv1_pb"] / row["jet_sv1_pu"] );
     else:
         IP3DPlusSV1w += -1.55 # log(row["jet_sv1_pb"]/row["jet_sv1_pu"])  = log((1-eff_b)/(1-eff_u)) from the endpoint of the SV1 ROC curve
     return IP3DPlusSV1w
@@ -155,7 +155,21 @@ def get_df(t):
         df = t.pandas.df(["jet_pt","jet_eta","eventnb","jet_LabDr_HadF", "jet_dRminToB", 
                           "jet_dRminToC", "jet_dRminToT", "jet_isPU", "jet_truthMatch", "PVz", 
                           "truth_PVz", getVariableNtrk(tagger)]+var_needed_for_ip3d_sv1) # add all the variables needed to compute IP3D+SV1
-        df["jet_my_sv1ip3d"] = df.apply (lambda row: compute_ip3d_sv1(row), axis=1)
+        #df["jet_my_sv1ip3d"] = df.apply (lambda row: compute_ip3d_sv1(row), axis=1)
+        
+
+        df["jet_my_sv1ip3d_test"] = np.where((df["jet_ip3d_pu"]>0) & (df["jet_ip3d_pb"] >0) & (df["jet_sv1_pu"]>0) & (df["jet_sv1_pb"]>0), np.log ( df["jet_ip3d_pb"] / df["jet_ip3d_pu"] )+np.log ( df["jet_sv1_pb"] / df["jet_sv1_pu"] ),
+                                             np.where( (df["jet_ip3d_pu"]>0) & (df["jet_ip3d_pb"] >0) & (df["jet_sv1_ntrkv"]<1), np.log ( df["jet_ip3d_pb"] / df["jet_ip3d_pu"] ) -1.55,
+                                                       np.where( df["jet_sv1_ntrkv"]>0, np.log ( df["jet_sv1_pb"] / df["jet_sv1_pu"] ), -1.55                                                                 
+                                                                 )
+                                                       )
+                                             )
+        df["jet_my_sv1ip3d"] = ((df["jet_ip3d_pu"]>0) & (df["jet_ip3d_pb"] >0))*np.log ( df["jet_ip3d_pb"] / df["jet_ip3d_pu"]) + ((df["jet_sv1_pu"]>0) & (df["jet_sv1_pb"] >0))*np.log ( df["jet_sv1_pb"] / df["jet_sv1_pu"] ) - (df["jet_sv1_ntrkv"]<1)*1.55
+        
+        #df["jet_my_sv1ip3d_test"] = np.where((df["jet_ip3d_pu"]>0) & (df["jet_ip3d_pb"] >0) & (df["jet_sv1_ntrkv"]>0),  np.log( df["jet_ip3d_pb"] / df["jet_ip3d_pu"] ), 2)
+
+
+        #df["jet_my_sv1ip3d_test"] = compute_ip3d_sv1_test(df["jet_ip3d_pu"], df["jet_ip3d_pb"], df["jet_sv1_pu"], df["jet_sv1_pb"], df["jet_sv1_ntrkv"])
     else:
         df = t.pandas.df(["jet_pt","jet_eta","eventnb","jet_LabDr_HadF", "jet_dRminToB", 
                           "jet_dRminToC", "jet_dRminToT", "jet_isPU", "jet_truthMatch", "PVz", 
