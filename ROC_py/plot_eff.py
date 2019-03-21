@@ -13,31 +13,22 @@ print("Ciao Chiara!")
 
 parser = argparse.ArgumentParser(description='Make efficiency plots.')
 parser.add_argument('--tagger', type=str, default="SV1")
-parser.add_argument('--largeEta', type=int, default=0)
 parser.add_argument('--twoTrk', type=int, default=0)
 parser.add_argument('--bEff', type=int, default=1)
 
 args = parser.parse_args()
 
 tagger=args.tagger
-largeEta=args.largeEta>0
-smallEta=args.largeEta==-1
 twoTrk = args.twoTrk>0
 bEff = args.bEff>0
 
-print("largeEta:",largeEta)
-print("smallEta:",smallEta)
 
 def getCut( tagger ):
   if tagger=="MV1":  return  0.945487725
-  if tagger=="MV1c": return  0.779833333333
-  if tagger=="MV2c00": return  0.0308333333333
-  if tagger=="MV2c10": return  -0.00416666666667
-  if tagger=="MV2c20" : return  -0.0215
-  if tagger=="IP3D":      return  2.007
-  if tagger=="IP3D+SV1":  return  4.3625
-  if tagger=="MVb":       return  -0.120991666667
-  if tagger=="SV1":       return  -97
+  if tagger=="IP3D":      return  2.582 # 70: 2.431553, 85: -0.149126
+  if tagger=="IP3D+SV1":  return  2.369 # 70: 2.133121, 85: -1.572315
+  if tagger=="SV1":       return  -1.129 # 70: -1.358764, 85: -98
+  if tagger=="JetFitter": return  -1.612 
   if tagger=="JetFitter": return  -1.6125 
   return 0
 
@@ -50,7 +41,7 @@ def getVariable( tagger ):
   if tagger=="MV2c20": return "jet_mv2c20"
   if tagger=="MVb":    return "jet_mvb"
   if tagger=="IP3D":   return  "jet_ip3d_llr"
-  if tagger=="IP3D+SV1":  return  "jet_sv1ip3d"
+  if tagger=="IP3D+SV1":  return  "jet_my_sv1ip3d"
   if tagger=="SV1":       return "jet_sv1_llr" 
   if tagger=="JetFitter": return  "jet_jf_m"
   return "0"
@@ -75,35 +66,37 @@ keys = ["ITK", "Initial", "Int1", "Int2", "Final"]
 condition = {
     "ITK":{
     #"file":"/afs/cern.ch/user/c/crizzi/myeos/HGTD/btagging/input_eff_plot/ITK/file.root",
-         "file":"../input/ITK/file.root",
+         "file":"../input/AC_ITKonly_trkEff1hit/file.root",
+         #"file":"../input/compare/Chiara_ntuple.root",
          "tree_name":"bTag_AntiKt4EMTopoJets",
          "label": "ITK-only",
          "color": "k"
     },
     "Int1":{
         #"file":"/afs/cern.ch/user/c/crizzi/myeos/HGTD/btagging/input_eff_plot/Intermediate_pre_Replacement_trkEffselfTag/file.root",
-        "file":"../input/Intermediate_pre_Replacement_trkEffselfTag/file.root",
+        "file":"../input/AC_Intermediate_pre_Replacement_trkEff1hit/file.root",
         "tree_name":"bTag_AntiKt4EMTopoJets",
         "label": "Int. pre-repl",
         "color": "y"
         },
     "Int2":{
         #"file":"/afs/cern.ch/user/c/crizzi/myeos/HGTD/btagging/input_eff_plot/Intermediate_post_Replacement_trkEffselfTag/file.root",
-        "file":"../input/Intermediate_post_Replacement_trkEffselfTag/file.root",
+        "file":"../input/AC_Intermediate_post_Replacement_trkEff1hit/file.root",
         "tree_name":"bTag_AntiKt4EMTopoJets",
         "label": "Int. post-repl",
         "color": "b"
         },
     "Initial":{
         #"file":"/afs/cern.ch/user/c/crizzi/myeos/HGTD/btagging/input_eff_plot/Initial_trkEffselfTag/file.root",
-        "file":"../input/Initial_trkEffselfTag/file.root",
+        #"file":"../input/compare/Chiara_ntuple.root",
+        "file":"../input/AC_Initial_trkEff1hit/file.root",
         "tree_name":"bTag_AntiKt4EMTopoJets",
         "label": "Initial",
         "color": "g"
         },
     "Final":{
         #"file":"/afs/cern.ch/user/c/crizzi/myeos/HGTD/btagging/input_eff_plot/Final_trkEffselfTag/file.root",
-        "file":"../input/Final_trkEffselfTag/file.root",
+        "file":"../input/AC_Final_trkEff1hit/file.root",
         "tree_name":"bTag_AntiKt4EMTopoJets",
         "label": "Final",
         "color": "r"
@@ -112,19 +105,28 @@ condition = {
 
 
 def get_df(t):  
-    df = t.pandas.df(["jet_pt","jet_eta","eventnb","jet_LabDr_HadF", "jet_dRminToB", 
-                      "jet_dRminToC", "jet_dRminToT", "jet_isPU", "jet_truthMatch", "PVz", 
-                      "truth_PVz", getVariableNtrk(tagger), getVariable(tagger)])
+    if tagger == "IP3D+SV1":
+        var_needed_for_ip3d_sv1=["jet_sv1_pb",
+                                 "jet_sv1_pu",
+                                 "jet_sv1_ntrk",
+                                 "jet_ip3d_ntrk",
+                                 "jet_sv1_ntrkv",
+                                 "jet_ip3d_pb",
+                                 "jet_ip3d_pu"]
+        df = t.pandas.df(["jet_pt","jet_eta","eventnb","jet_LabDr_HadF", "jet_dRminToB", 
+                          "jet_dRminToC", "jet_dRminToT", "jet_isPU", "jet_truthMatch", "PVz", 
+                          "truth_PVz", getVariableNtrk(tagger)]+var_needed_for_ip3d_sv1) # add all the variables needed to compute IP3D+SV1
+        #df["jet_my_sv1ip3d"] = df.apply (lambda row: compute_ip3d_sv1(row), axis=1) # sloooow
+    else:
+        df = t.pandas.df(["jet_pt","jet_eta","eventnb","jet_LabDr_HadF", "jet_dRminToB", 
+                          "jet_dRminToC", "jet_dRminToT", "jet_isPU", "jet_truthMatch", "PVz", 
+                          "truth_PVz", getVariableNtrk(tagger), getVariable(tagger)])
+
     df=df.rename_axis(index=['entry', 'jet_pos'])
     df=df.reset_index(level=['jet_pos'])
     df = df.set_index(["eventnb","jet_pos"])    
-    CutBase=" jet_pt>20000 & jet_truthMatch==1 & jet_isPU==0 & abs(PVz-truth_PVz)<0.1  & abs(jet_eta)<4"
-    if largeEta:
-      CutBase = CutBase+" & abs(jet_eta)>2.4"
-      print("add large eta requirement")
-    if smallEta:
-      CutBase = CutBase+" & abs(jet_eta)<2.4"
-      print("add small eta requirement")
+    CutBase=" jet_pt>20000 & jet_truthMatch==1 & jet_isPU==0 & abs(PVz-truth_PVz)<0.1"
+    CutBase = CutBase+" & abs(jet_eta)<4"
     CutBase = CutBase+" & ( (jet_LabDr_HadF!=4 & jet_LabDr_HadF!=5 & jet_LabDr_HadF!=15 & jet_dRminToB>0.8 & jet_dRminToC>0.8 & jet_dRminToT>0.8)"
     CutBase = CutBase+" | (jet_LabDr_HadF==5))"
 
@@ -135,6 +137,7 @@ def get_df(t):
 
 def filter_df(df1, ITKcomp=0, twoTrk=0, df2=0):
     print("shape df1 input: ", df1.shape)
+    # va messo dopo che ho sistemato le cose 
     if ITKcomp:
         # index in common with ITK-only
         idx = sorted(df1.index.intersection(df2.index)) 
@@ -142,14 +145,48 @@ def filter_df(df1, ITKcomp=0, twoTrk=0, df2=0):
         df2 = df2.loc[idx]
         if twoTrk:
             # < 2 trk: use ITK, >=2 trk: use HGTS
-            df2_sel = df2.query(getVariableNtrk(tagger)+" < 2 | abs(jet_eta)<2.4")
-            df1_sel = df1.loc[df1.index.difference(df2_sel.index)]
-            df3 = pd.concat([df1_sel,df2_sel])
-            return df3
+
+            if tagger == "IP3D+SV1":
+                df2.columns = [str(col) + '_ITK' for col in df2.columns]
+                df3 = pd.concat([df1, df2], axis=1)
+              #print(df3.columns)
+                df3["jet_ip3d_pu"] = np.where(df3['jet_ip3d_ntrk_ITK']>1, df3["jet_ip3d_pu"], df3["jet_ip3d_pu_ITK"])
+                df3["jet_ip3d_pb"] = np.where(df3['jet_ip3d_ntrk_ITK']>1, df3["jet_ip3d_pb"], df3["jet_ip3d_pb_ITK"])
+                df3["jet_sv1_pu"] = np.where(df3['jet_sv1_ntrk_ITK']>1, df3["jet_sv1_pu"], df3["jet_sv1_pu_ITK"])
+                df3["jet_sv1_pb"] = np.where(df3['jet_sv1_ntrk_ITK']>1, df3["jet_sv1_pb"], df3["jet_sv1_pb_ITK"])
+                df3["jet_sv1_ntrkv"] = np.where(df3['jet_sv1_ntrk_ITK']>1, df3["jet_sv1_ntrkv"], df3["jet_sv1_ntrkv_ITK"])
+                df3["jet_my_sv1ip3d"] = np.where((df3["jet_ip3d_pu"]>0) & (df3["jet_ip3d_pb"] >0) & (df3["jet_sv1_pu"]>0) & (df3["jet_sv1_pb"]>0), np.log ( df3["jet_ip3d_pb"] / df3["jet_ip3d_pu"] )+np.log ( df3["jet_sv1_pb"] / df3["jet_sv1_pu"] ),
+                                                 np.where( (df3["jet_ip3d_pu"]>0) & (df3["jet_ip3d_pb"] >0) & (df3["jet_sv1_ntrkv"]<1), np.log ( df3["jet_ip3d_pb"] / df3["jet_ip3d_pu"] ) -1.55,
+                                                           np.where( df3["jet_sv1_ntrkv"]<0, -1.55, 
+                                                                     np.where( ((df3["jet_sv1_pu"]>0) & (df3["jet_sv1_pb"]>0)), np.log ( df3["jet_sv1_pb"] / df3["jet_sv1_pu"] ), 0)                                                                 
+                                                                     )
+                                                           )
+                                                 ) # HERE
+                itk_col = [col for col in df3.columns if "ITK" in col]
+                df3=df3.drop(itk_col, axis=1)
+                return df3
+            else:             # previously was done also for IP3D+SV1 looking at the number of tracks for SV1
+
+                df2_sel = df2.query(getVariableNtrk(tagger)+" < 2") 
+                df1_sel = df1.loc[df1.index.difference(df2_sel.index)]
+                df3 = pd.concat([df1_sel,df2_sel])   
+                return df3
         else:
+            if tagger == "IP3D+SV1":
+                df1["jet_my_sv1ip3d"] = np.where((df1["jet_ip3d_pu"]>0) & (df1["jet_ip3d_pb"] >0) & (df1["jet_sv1_pu"]>0) & (df1["jet_sv1_pb"]>0), np.log ( df1["jet_ip3d_pb"] / df1["jet_ip3d_pu"] )+np.log ( df1["jet_sv1_pb"] / df1["jet_sv1_pu"] ),
+                                                 np.where( (df1["jet_ip3d_pu"]>0) & (df1["jet_ip3d_pb"] >0) & (df1["jet_sv1_ntrkv"]<1), np.log ( df1["jet_ip3d_pb"] / df1["jet_ip3d_pu"] ) -1.55,
+                                                           np.where( df1["jet_sv1_ntrkv"]<0, -1.55, 
+                                                                     np.where( ((df1["jet_sv1_pu"]>0) & (df1["jet_sv1_pb"]>0)), np.log ( df1["jet_sv1_pb"] / df1["jet_sv1_pu"] ), 0))))
             return df1
     else:      
+        if tagger == "IP3D+SV1":
+            df1["jet_my_sv1ip3d"] = np.where((df1["jet_ip3d_pu"]>0) & (df1["jet_ip3d_pb"] >0) & (df1["jet_sv1_pu"]>0) & (df1["jet_sv1_pb"]>0), np.log ( df1["jet_ip3d_pb"] / df1["jet_ip3d_pu"] )+np.log ( df1["jet_sv1_pb"] / df1["jet_sv1_pu"] ),
+                                             np.where( (df1["jet_ip3d_pu"]>0) & (df1["jet_ip3d_pb"] >0) & (df1["jet_sv1_ntrkv"]<1), np.log ( df1["jet_ip3d_pb"] / df1["jet_ip3d_pu"] ) -1.55,
+                                                       np.where( df1["jet_sv1_ntrkv"]<0, -1.55, 
+                                                                 np.where( ((df1["jet_sv1_pu"]>0) & (df1["jet_sv1_pb"]>0)), np.log ( df1["jet_sv1_pb"] / df1["jet_sv1_pu"] ), 0))))
+
         return df1
+
 
 def input_arrays(df):
   return df.as_matrix(columns=['jet_LabDr_HadF']), df.as_matrix(columns=[getVariable(tagger)])
@@ -170,6 +207,7 @@ for i,key in enumerate(keys):
     df = get_df(t)
     if int(i)==0:
       df_ref = df.copy()
+      df = filter_df(df, 1, 0, df_ref)
     else:
       df = filter_df(df, 1, twoTrk, df_ref)
 
@@ -244,12 +282,7 @@ else:
 plt.xlabel('jet eta')
 plt.text(0.02, 0.25, 'ATLAS Simulation Internal', size='large',transform=ax1.transAxes)
 plt.text(0.02, 0.15, '$t\overline{t}$ simulation', size='medium',transform=ax1.transAxes)
-if largeEta:
-    plt.text(0.02, 0.10, 'jet p$_{T}>$ 20 GeV, $|\eta|>$2.4', size='medium',transform=ax1.transAxes)
-elif smallEta:
-  plt.text(0.02, 0.10, 'jet p$_{T}>$ 20 GeV, $|\eta|<$2.4', size='medium',transform=ax1.transAxes)
-else:
-    plt.text(0.02, 0.10, 'jet p$_{T}>$ 20 GeV', size='medium',transform=ax1.transAxes)
+plt.text(0.02, 0.10, 'jet p$_{T}>$ 20 GeV', size='medium',transform=ax1.transAxes)
 plt.grid(True)
 
 ax2 = plt.subplot(gs[1])
@@ -277,10 +310,6 @@ if bEff:
   name_plot = "eff_"+getVariable(tagger)
 else:
   name_plot = "mistag_"+getVariable(tagger)
-if largeEta:
-  name_plot+="_largeEta"
-if smallEta:
-  name_plot+="_smallEta"
 if twoTrk:
   name_plot+="_twoTrk"
 name_plot+="_trkEffselfTag"
