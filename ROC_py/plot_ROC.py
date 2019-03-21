@@ -64,21 +64,21 @@ condition = {
          "file":"../input/AC_ITKonly_trkEff1hit/file.root",
          #"file":"../input/compare/Chiara_ntuple.root",
          "tree_name":"bTag_AntiKt4EMTopoJets",
-         "label": "ITK-only",
+         "label": "ITK",
          "color": "k"
     },
     "Int1":{
         #"file":"/afs/cern.ch/user/c/crizzi/myeos/HGTD/btagging/input_eff_plot/Intermediate_pre_Replacement_trkEffselfTag/file.root",
         "file":"../input/AC_Intermediate_pre_Replacement_trkEff1hit/file.root",
         "tree_name":"bTag_AntiKt4EMTopoJets",
-        "label": "Int. pre-repl",
+        "label": r'ITK+HGTD (2000 fb$^{-1}$)',
         "color": "y"
         },
     "Int2":{
         #"file":"/afs/cern.ch/user/c/crizzi/myeos/HGTD/btagging/input_eff_plot/Intermediate_post_Replacement_trkEffselfTag/file.root",
         "file":"../input/AC_Intermediate_post_Replacement_trkEff1hit/file.root",
         "tree_name":"bTag_AntiKt4EMTopoJets",
-        "label": "Int. post-repl",
+        "label": r'ITK+HGTD (2001 fb$^{-1}$)',
         "color": "b"
         },
     "Initial":{
@@ -86,14 +86,14 @@ condition = {
         #"file":"../input/compare/Chiara_ntuple.root",
         "file":"../input/AC_Initial_trkEff1hit/file.root",
         "tree_name":"bTag_AntiKt4EMTopoJets",
-        "label": "Initial",
+        "label": r'ITK+HGTD (0 fb$^{-1}$)',
         "color": "g"
         },
     "Final":{
         #"file":"/afs/cern.ch/user/c/crizzi/myeos/HGTD/btagging/input_eff_plot/Final_trkEffselfTag/file.root",
         "file":"../input/AC_Final_trkEff1hit/file.root",
         "tree_name":"bTag_AntiKt4EMTopoJets",
-        "label": "Final",
+        "label": r'ITK+HGTD (4000 fb$^{-1}$)',
         "color": "r"
         }
     }
@@ -287,12 +287,15 @@ for i,key in enumerate(keys):
     
 plt.legend(loc='best') 
 plt.xlim([0.5,1.0])
-plt.ylim([1,3000])
+if args.etaRange[0] > 2:
+  plt.ylim([1,600])
+else:
+  plt.ylim([1,3000])
 plt.gca().set_xticklabels(['']*10)
 #plt.xticks([])
 plt.ylabel('light-jet rejection')
 plt.xlabel('')
-plt.text(0.02, 0.25, 'ATLAS Simulation Internal', size='large',transform=ax1.transAxes)
+plt.text(0.02, 0.25, r'$\mathbf{ATLAS}$ Simulation Internal', size='large',transform=ax1.transAxes)
 plt.text(0.02, 0.15, '$t\overline{t}$ simulation', size='medium',transform=ax1.transAxes)
 plt.text(0.02, 0.10, 'jet p$_{T}>$ 20 GeV, '+ str(args.etaRange[0])+ '<$|\eta|<$'+str(args.etaRange[1]), size='medium',transform=ax1.transAxes)
 plt.grid(True, which="both", linestyle='--')
@@ -312,7 +315,7 @@ for i,key in enumerate(keys):
     plt.plot(x, ljr_ratio, color=condition[key]['color'])
 
 plt.xlim([0.5,1.0])
-plt.ylim([0.8,2])
+plt.ylim([0.85,1.7])
 plt.ylabel('Ratio to ITK')
 plt.xlabel('b-jet efficiency')
 
